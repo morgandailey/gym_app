@@ -1,0 +1,2400 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>WORKOUT LOGGER</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@700;900&display=swap');
+  :root{--r:#FF2D55;--b:#0057FF;--y:#FFE600;--g:#00C853;--k:#111;--w:#fff;--bg:#f8f8f8}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{
+    background:var(--bg);
+    font-family:'Nunito','Arial Black',sans-serif;
+    min-height:100vh;padding-bottom:130px;
+  }
+  input[type=number]{-moz-appearance:textfield}
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+
+  #toast{
+    display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);
+    background:var(--k);color:#fff;border-radius:8px;
+    padding:10px 20px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;
+    letter-spacing:.5px;box-shadow:0 4px 20px rgba(0,0,0,.25);
+  }
+
+  #rest-banner{
+    display:none;position:sticky;top:0;z-index:20;
+    background:var(--k);
+    padding:10px 16px;align-items:center;justify-content:space-between;
+  }
+  #rest-banner.active{display:flex}
+  #rest-banner-left{display:flex;flex-direction:column;gap:2px}
+  #rest-banner-exname{font-size:11px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.5px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #rest-banner-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:1px;text-transform:uppercase}
+  #rest-banner-right{display:flex;align-items:center;gap:10px}
+  #rest-banner-timer{font-family:'Bangers',sans-serif;font-size:34px;color:var(--w);letter-spacing:3px;line-height:1}
+  #btn-terminate{
+    background:var(--r);color:#fff;border:none;border-radius:6px;
+    font-family:inherit;font-size:11px;font-weight:900;
+    padding:7px 14px;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;
+    white-space:nowrap;
+  }
+
+  #header{
+    background:var(--w);border-bottom:1px solid #e5e5e5;
+    padding:14px 16px 0;position:sticky;top:0;z-index:10;
+  }
+  #header-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .app-title{
+    font-family:'Bangers','Arial Black',sans-serif;
+    font-size:26px;letter-spacing:3px;color:var(--r);line-height:1;
+  }
+  .btn-sm{
+    background:var(--w);border:1.5px solid #ddd;border-radius:8px;
+    color:var(--k);font-family:inherit;font-size:11px;font-weight:700;
+    padding:6px 12px;cursor:pointer;letter-spacing:.5px;text-transform:uppercase;
+  }
+  .btn-sm:active{background:#f0f0f0;}
+  .btn-sm.blue{background:var(--b);color:#fff;border-color:var(--b)}
+  .btn-sm.red{background:var(--r);color:#fff;border-color:var(--r)}
+
+  #tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:10px;-webkit-overflow-scrolling:touch;}
+  #tabs::-webkit-scrollbar{display:none}
+  .tab{
+    background:var(--w);color:#888;
+    border:1.5px solid #e0e0e0;border-radius:10px;
+    padding:6px 12px 8px;font-size:11px;font-family:inherit;font-weight:700;
+    cursor:pointer;white-space:nowrap;flex-shrink:0;letter-spacing:.5px;
+    text-transform:uppercase;line-height:1.3;
+    box-shadow:3px 3px 0 #e0e0e0;
+    transition:all .15s;
+  }
+  .tab:active{transform:scale(.96);}
+  .tab.active{
+    background:var(--w);color:var(--r);
+    border-color:var(--r);border-width:2px;font-weight:900;
+    box-shadow:4px 4px 0 var(--r);
+    transform:translate(-1px,-1px);
+  }
+  .tab.has-sets{background:#e8f9ff;color:var(--b);border-color:#b3deff;}
+  .tab.done{background:#e8f5e9;color:#2e7d32;border-color:#a5d6a7;}
+  .tab.free{background:var(--w);color:#aaa;border-color:#e0e0e0;border-style:dashed;}
+
+  #log-panel{
+    display:none;margin:12px 16px 0;
+    background:var(--w);border:1px solid #e5e5e5;border-radius:12px;
+    box-shadow:0 2px 12px rgba(0,0,0,.08);overflow:hidden;
+  }
+  #log-toolbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:12px 14px;border-bottom:1px solid #f0f0f0;
+  }
+  .log-title{font-family:'Bangers',sans-serif;font-size:15px;letter-spacing:2px;color:var(--r)}
+  #log-status{font-size:10px;font-weight:700;color:#aaa;letter-spacing:.5px;}
+  #log-content-wrap{max-height:200px;overflow-y:auto;padding:12px}
+  #log-content{font-size:11px;color:#555;white-space:pre-wrap;line-height:1.8;font-family:monospace}
+  #log-actions{display:flex;gap:6px;padding:10px 14px;border-top:1px solid #f0f0f0}
+  #file-input{display:none}
+
+  #day-info{padding:16px 16px 6px}
+  #day-header-row{display:flex;align-items:center;justify-content:space-between}
+  #day-label{font-family:'Bangers',sans-serif;font-size:20px;letter-spacing:2px;color:var(--k)}
+  #muscles{display:flex;gap:4px;margin-top:8px;flex-wrap:wrap}
+  .muscle-tag{
+    border-radius:20px;font-size:9px;font-weight:700;
+    padding:3px 9px;letter-spacing:.3px;
+  }
+  .muscle-tag.primary{background:rgba(255,45,85,.1);color:var(--r);border:1px solid rgba(255,45,85,.2);}
+  .muscle-tag.secondary{background:#f5f5f5;color:#888;border:1px solid #e8e8e8;}
+  .btn-clear{
+    background:transparent;border:1.5px solid var(--r);border-radius:6px;
+    color:var(--r);font-family:inherit;font-size:10px;font-weight:700;
+    padding:4px 10px;cursor:pointer;letter-spacing:.5px;
+  }
+
+  #exercises{padding:8px 16px 0}
+  .ex-card{
+    background:var(--w);border:1px solid #e8e8e8;
+    border-radius:12px;margin-bottom:10px;overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .ex-header{
+    padding:12px 14px 10px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid #f5f5f5;
+  }
+  .ex-name{font-size:13px;font-weight:900;color:var(--k);flex:1;padding-right:8px;line-height:1.3}
+  .ex-right{display:flex;align-items:center;gap:5px;flex-shrink:0}
+  .variant-row{
+    display:flex;gap:5px;padding:8px 14px 4px;flex-wrap:wrap;
+    border-bottom:1px solid #f5f5f5;
+  }
+  .variant-btn{
+    background:#f5f5f5;border:1.5px solid #e0e0e0;border-radius:6px;
+    font-family:inherit;font-size:10px;font-weight:700;
+    padding:4px 10px;cursor:pointer;letter-spacing:.3px;
+    transition:all .15s;color:#888;
+  }
+  .variant-btn.active{background:var(--r);color:#fff;border-color:var(--r);font-weight:900;}
+  .note-tag{
+    font-size:9px;font-weight:700;color:#fff;
+    background:var(--k);border-radius:4px;
+    padding:2px 6px;letter-spacing:.3px;white-space:nowrap;
+  }
+  .perhand-tag{
+    font-size:9px;font-weight:700;color:var(--b);
+    background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2);border-radius:4px;
+    padding:2px 6px;letter-spacing:.3px;white-space:nowrap;
+  }
+  .rec-badge{
+    background:var(--r);color:#fff;font-size:9px;font-weight:700;
+    padding:2px 7px;border-radius:4px;letter-spacing:.3px;
+  }
+  .sets-badge{
+    background:#f5f5f5;color:var(--k);font-size:10px;font-weight:700;
+    padding:2px 8px;border-radius:4px;letter-spacing:.3px;
+  }
+  .unit-btn{
+    border:1.5px solid #e0e0e0;border-radius:6px;padding:3px 8px;cursor:pointer;
+    font-family:inherit;font-size:10px;font-weight:700;letter-spacing:.3px;
+    background:#f5f5f5;color:#888;
+  }
+  .unit-btn.kg{background:rgba(0,87,255,.08);color:var(--b);border-color:rgba(0,87,255,.2);}
+  .unit-btn.lb{background:rgba(255,45,85,.08);color:var(--r);border-color:rgba(255,45,85,.2);}
+
+  .sets-row{padding:8px 14px;display:flex;flex-wrap:wrap;gap:5px}
+  .set-chip{
+    background:#f8f8f8;border:1.5px solid #e8e8e8;border-radius:8px;
+    padding:5px 10px;font-size:12px;font-weight:700;color:var(--k);
+    cursor:pointer;display:flex;align-items:center;gap:5px;
+  }
+  .set-num{color:var(--r);font-weight:900;}
+  .set-x{color:#ccc;font-size:10px}
+  .rest-tag{
+    font-size:9px;font-weight:700;color:#aaa;
+    background:#f0f0f0;border-radius:3px;
+    padding:1px 4px;margin-left:2px;
+  }
+
+  .input-row{display:flex;gap:6px;padding:8px 12px 10px;align-items:center}
+  .input-row input{
+    flex:1;background:#f8f8f8;border:1.5px solid #e8e8e8;border-radius:8px;
+    color:var(--k);font-family:inherit;font-weight:700;
+    font-size:14px;padding:10px 12px;outline:none;min-width:0;
+  }
+  .input-row input::placeholder{color:#ccc;font-size:12px;font-weight:700}
+  .input-row input:focus{border-color:var(--r);background:var(--w);box-shadow:0 0 0 3px rgba(255,45,85,.1);}
+  .btn-add{
+    background:var(--r);color:#fff;border:none;border-radius:10px;
+    font-family:inherit;font-weight:900;font-size:22px;
+    width:44px;height:44px;cursor:pointer;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;line-height:1;
+  }
+  .convert-hint{padding:0 14px 10px;font-size:11px;font-weight:700;color:var(--b)}
+
+  #finish-wrap{padding:8px 16px 0}
+  #btn-finish{
+    width:100%;background:#f0f0f0;color:#bbb;
+    border:none;border-radius:12px;padding:16px;
+    font-family:'Bangers',sans-serif;font-size:22px;cursor:pointer;
+    letter-spacing:3px;text-transform:uppercase;
+    transition:all .2s;
+  }
+  #btn-finish.active{background:var(--r);color:#fff;box-shadow:0 4px 16px rgba(255,45,85,.35);}
+  .month-card{
+    border:2px solid var(--k);border-radius:4px;margin-bottom:10px;overflow:hidden;
+  }
+  .month-header{
+    background:var(--k);color:var(--y);font-family:'Bangers',sans-serif;
+    font-size:15px;letter-spacing:2px;padding:7px 12px;
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .month-stats{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:0;
+  }
+  .month-stat{
+    padding:10px 8px;text-align:center;border-right:1px solid #eee;
+  }
+  .month-stat:last-child{border-right:none;}
+  .month-stat-val{font-size:18px;font-weight:900;color:var(--r);font-family:'Bangers',sans-serif;letter-spacing:1px;}
+  .month-stat-label{font-size:9px;font-weight:700;color:#888;letter-spacing:.5px;text-transform:uppercase;margin-top:2px;}
+  .month-days{
+    border-top:1px solid #eee;padding:8px 12px;
+    display:flex;flex-wrap:wrap;gap:4px;
+  }
+  .month-day-chip{
+    background:var(--y);border:1.5px solid var(--k);border-radius:3px;
+    font-size:9px;font-weight:900;padding:2px 6px;color:var(--k);letter-spacing:.5px;
+  }
+  .bar-row{display:flex;align-items:center;gap:6px;font-size:11px;}
+  .bar-label{font-weight:900;color:var(--k);width:90px;flex-shrink:0;font-size:10px;letter-spacing:.3px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;}
+  .bar-track{flex:1;background:#eee;border:2px solid var(--k);border-radius:3px;height:14px;overflow:hidden;}
+  .bar-fill{height:100%;background:var(--r);border-radius:1px;transition:width .4s ease;}
+  .bar-score{font-weight:900;font-size:10px;color:var(--k);width:32px;text-align:right;flex-shrink:0;}
+  #finish-hint{text-align:center;font-size:10px;font-weight:700;color:#888;margin-top:6px;letter-spacing:1px;text-transform:uppercase;display:none}
+
+  /* GitHub panel */
+  #github-panel{
+    margin:8px 12px 0;
+    background:var(--w);border:2px solid var(--k);border-radius:6px;
+    box-shadow:3px 3px 0 var(--k);overflow:hidden;
+  }
+  #github-toolbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 12px;border-bottom:2px solid var(--k);
+    background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.04) 4px,rgba(0,0,0,.04) 8px);
+  }
+  .gh-title{font-family:'Bangers',sans-serif;font-size:15px;letter-spacing:2px;color:var(--k)}
+  #gh-status-dot{width:8px;height:8px;border-radius:50%;background:#ccc;flex-shrink:0;}
+  #gh-status-dot.ok{background:var(--g);}
+  #gh-status-dot.err{background:var(--r);}
+  #gh-status-dot.busy{background:var(--y);animation:pulse .8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  #github-settings{padding:10px 12px;border-bottom:1px solid #f0f0f0;display:flex;flex-direction:column;gap:6px;}
+  .gh-input{
+    width:100%;background:#f8f8f8;border:1.5px solid #e8e8e8;border-radius:6px;
+    color:var(--k);font-family:inherit;font-weight:700;font-size:12px;
+    padding:8px 10px;outline:none;
+  }
+  .gh-input:focus{border-color:var(--k);background:var(--w);}
+  .gh-input::placeholder{color:#bbb;font-weight:700;}
+  #github-actions{display:flex;gap:6px;padding:10px 12px;}
+  #gh-commit-info{
+    padding:6px 12px 10px;font-size:10px;font-weight:700;color:#888;
+    letter-spacing:.3px;line-height:1.6;display:none;
+  }
+  .gh-commit-sha{font-family:monospace;color:var(--b);font-size:10px;}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<div id="rest-banner">
+  <div id="rest-banner-left">
+    <div id="rest-banner-label">REST</div>
+    <div id="rest-banner-exname"></div>
+  </div>
+  <div id="rest-banner-right">
+    <div id="rest-banner-timer">0:00</div>
+    <button id="btn-terminate">■ STOP</button>
+  </div>
+</div>
+
+<div id="header">
+  <div id="header-top">
+    <span class="app-title">WORKOUT!!</span>
+    <div style="display:flex;gap:6px">
+      <button class="btn-sm" id="btn-toggle-log">日誌</button>
+      <button class="btn-sm" id="btn-toggle-analysis">分析</button>
+      <button class="btn-sm" id="btn-toggle-monthly">月報</button>
+      <button class="btn-sm" id="btn-toggle-github" style="padding:6px 9px;">⬡ GH</button>
+    </div>
+  </div>
+  <div id="tabs"></div>
+</div>
+
+<div id="log-panel">
+  <div id="log-toolbar">
+    <span class="log-title">★ TRAINLOG ★</span>
+    <span id="log-status">未載入</span>
+  </div>
+  <div id="log-content-wrap">
+    <pre id="log-content">← 匯入你的 train_log.md 開始</pre>
+  </div>
+  <div id="log-actions">
+    <button class="btn-sm" id="btn-import" style="flex:1;text-align:center">📂 匯入</button>
+    <button class="btn-sm blue" id="btn-export" style="flex:1;text-align:center">↓ 匯出</button>
+    <button class="btn-sm red" id="btn-clear-log" style="flex:1;text-align:center">✕ 清除日誌</button>
+  </div>
+  <div style="padding:6px 0 0;">
+    <button class="btn-sm" id="btn-clear-cache" style="width:100%;text-align:center;background:rgba(255,45,85,.08);border-color:rgba(255,45,85,.3);color:var(--r);">🗑 清除所有暫存紀錄</button>
+  </div>
+</div>
+
+<div id="github-panel" style="display:none;">
+  <div id="github-toolbar">
+    <span class="gh-title">⬡ GITHUB SYNC</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span id="gh-status-text" style="font-size:10px;font-weight:700;color:#888;letter-spacing:.5px;">未連線</span>
+      <div id="gh-status-dot"></div>
+    </div>
+  </div>
+  <div id="github-settings">
+    <input class="gh-input" id="gh-pat" type="password" placeholder="GitHub PAT (ghp_...)" autocomplete="off">
+    <div style="display:flex;gap:6px;">
+      <input class="gh-input" id="gh-repo" placeholder="owner/repo" style="flex:1;" value="morgandailey/gym_app">
+      <input class="gh-input" id="gh-path" placeholder="檔名路徑" style="flex:1;" value="workout_logger.html">
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input class="gh-input" id="gh-branch" placeholder="branch" style="flex:1;" value="main">
+      <button class="btn-sm" id="gh-btn-save-cfg" style="white-space:nowrap;flex-shrink:0;">💾 儲存設定</button>
+    </div>
+  </div>
+  <div id="github-actions">
+    <button class="btn-sm blue" id="gh-btn-pull" style="flex:1;text-align:center;">↓ Pull</button>
+    <button class="btn-sm red" id="gh-btn-push" style="flex:1;text-align:center;">↑ Push</button>
+  </div>
+  <div id="gh-commit-info"></div>
+</div>
+
+<div id="monthly-panel" style="display:none;margin:12px 12px 0;">
+  <div style="background:var(--w);border:3px solid var(--k);border-radius:4px;box-shadow:5px 5px 0 var(--k);overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:2px solid var(--k);background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.04) 4px,rgba(0,0,0,.04) 8px);">
+      <span style="font-family:'Bangers',sans-serif;font-size:16px;letter-spacing:3px;color:var(--b)">★ 每月訓練報告</span>
+    </div>
+    <div id="monthly-empty" style="padding:20px;text-align:center;font-size:12px;font-weight:700;color:#aaa;display:none;">請先匯入訓練日誌</div>
+    <div id="monthly-content" style="padding:12px;"></div>
+  </div>
+</div>
+
+<input type="file" id="file-input" accept=".md,text/plain">
+
+<div id="analysis-panel" style="display:none;margin:12px 12px 0;">
+  <div style="background:var(--w);border:3px solid var(--k);border-radius:4px;box-shadow:5px 5px 0 var(--k);overflow:hidden;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:2px solid var(--k);background:repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.04) 4px,rgba(0,0,0,.04) 8px);">
+      <span style="font-family:'Bangers',sans-serif;font-size:16px;letter-spacing:3px;color:var(--r)">★ 肌群分析 (近4週)</span>
+      <span id="analysis-range" style="font-size:10px;font-weight:700;color:#888;letter-spacing:1px;"></span>
+    </div>
+    <div id="analysis-empty" style="padding:20px;text-align:center;font-size:12px;font-weight:700;color:#aaa;letter-spacing:1px;display:none;">請先匯入訓練日誌</div>
+    <div id="analysis-content" style="padding:12px;">
+      <!-- Bar chart -->
+      <div style="font-size:10px;font-weight:900;color:#888;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;">訓練量分佈（kg·reps，不含徒手動作）</div>
+      <div id="bar-chart" style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;"></div>
+      <!-- Anomaly detection -->
+      <div id="anomaly-section" style="margin-bottom:14px;display:none;">
+        <div style="font-size:10px;font-weight:900;color:#888;letter-spacing:2px;margin-bottom:6px;text-transform:uppercase;">⚠️ 數據異常偵測</div>
+        <div id="anomaly-list" style="display:flex;flex-direction:column;gap:5px;"></div>
+      </div>
+      <!-- Weight targets -->
+      <div style="font-size:10px;font-weight:900;color:#888;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;">目標重量分析（基於估算 1RM）</div>
+      <div id="weight-targets" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;"></div>
+      <!-- Bodyweight summary -->
+      <div id="bw-summary" style="margin-bottom:14px;"></div>
+      <!-- PR Trend Chart -->
+      <div style="font-size:10px;font-weight:900;color:#888;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;">PR 趨勢圖</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;">
+        <select id="pr-exercise-select" style="flex:1;background:var(--w);border:2px solid var(--k);border-radius:4px;font-family:inherit;font-size:12px;font-weight:700;padding:6px 8px;color:var(--k);outline:none;">
+          <option value="">— 選擇動作 —</option>
+        </select>
+      </div>
+      <div id="pr-chart-wrap" style="margin-bottom:16px;min-height:160px;display:flex;align-items:center;justify-content:center;">
+        <div id="pr-empty" style="font-size:11px;color:#aaa;font-weight:700;">選擇動作後顯示趨勢</div>
+        <canvas id="pr-canvas" width="340" height="160" style="max-width:100%;display:none;"></canvas>
+      </div>
+      <div id="pr-stats" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;"></div>
+      <!-- Radar chart -->
+      <div style="font-size:10px;font-weight:900;color:#888;letter-spacing:2px;margin-bottom:8px;text-transform:uppercase;">肌群平衡雷達</div>
+      <div style="display:flex;justify-content:center;">
+        <canvas id="radar-canvas" width="360" height="300" style="max-width:100%"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="day-info">
+  <div id="day-header-row">
+    <div id="day-label"></div>
+    <button class="btn-clear" id="btn-clear-day" style="display:none">✕ 清除</button>
+  </div>
+  <div id="muscles"></div>
+</div>
+
+<div id="exercises"></div>
+
+<div id="custom-exercises"></div>
+<div style="padding:4px 12px 0;">
+  <div style="display:flex;gap:6px;margin-bottom:6px;">
+    <select id="custom-muscle-select" style="flex:1;background:var(--w);border:2px solid #ccc;border-radius:4px;font-family:inherit;font-size:12px;font-weight:700;padding:7px 8px;color:var(--k);outline:none;">
+      <option value="">— 選部位 —</option>
+      <option value="胸">胸部</option>
+      <option value="背">背部</option>
+      <option value="腿">腿部</option>
+      <option value="肩">肩部</option>
+      <option value="二頭">二頭肌</option>
+      <option value="三頭">三頭肌</option>
+      <option value="核心">核心</option>
+    </select>
+    <select id="custom-ex-select" style="flex:2;background:var(--w);border:2px solid #ccc;border-radius:4px;font-family:inherit;font-size:12px;font-weight:700;padding:7px 8px;color:var(--k);outline:none;">
+      <option value="">— 選動作 —</option>
+    </select>
+  </div>
+  <div style="display:flex;gap:6px;">
+    <input id="custom-ex-name" type="text" placeholder="或直接輸入動作名稱"
+      style="flex:1;background:var(--w);border:2px solid #ccc;border-radius:4px;font-family:inherit;font-size:12px;font-weight:700;padding:7px 10px;outline:none;color:var(--k);">
+    <button id="btn-add-custom" style="background:var(--k);color:var(--y);border:2px solid var(--k);border-radius:4px;font-family:inherit;font-size:12px;font-weight:900;padding:7px 12px;cursor:pointer;white-space:nowrap;letter-spacing:.5px;">+ 加入</button>
+  </div>
+</div>
+
+<div id="finish-wrap">
+  <button id="btn-finish">結束訓練</button>
+  <div id="finish-hint">▼ 完成後自動匯出日誌 ▼</div>
+</div>
+
+<script>
+const PLAN={
+  "Day 1":{
+    label:"Chest & Triceps",
+    muscles:{p:["胸大肌","三頭肌"],s:["前三角肌","前鋸肌"]},
+    exercises:[
+      {name:"槓鈴臥推 (Barbell Bench Press)",sets:4,reps:"5–8"},
+      {name:"上斜啞鈴推舉",perHand:true,sets:3,reps:"8–10"},
+      {name:"蝴蝶機夾胸 (Pec Deck Fly)",sets:3,reps:"12–15"},
+      {name:"雙槓支撐 (Dips)",sets:3,reps:"8–12"},
+      {name:"滑輪三頭下壓 (繩索)",sets:3,reps:"12–15"},
+      {name:"Hanging Leg Raise",sets:3,reps:"15–20"}
+    ]
+  },
+  "Day 2":{
+    label:"Back Width & Thickness",
+    muscles:{p:["闊背肌","菱形肌"],s:["大圓肌","後三角肌"]},
+    exercises:[
+      {name:"離心引體向上 (Negative Pull-up)",sets:4,reps:"3–5"},
+      {name:"滑輪下拉 (寬手柄)",sets:4,reps:"8–10"},
+      {name:"單臂啞鈴划船",perHand:true,sets:4,reps:"8–10"},
+      {name:"地雷管划船 (Landmine Row)",sets:3,reps:"10–12"},
+      {name:"面拉 (Face Pull)",sets:3,reps:"15–20"},
+      {name:"鳥犬式",sets:3,reps:"12–15"}
+    ]
+  },
+  "Day 3":{
+    label:"Legs — Full",
+    muscles:{p:["股四頭肌","臀大肌"],s:["腿後肌群","核心"]},
+    exercises:[
+      {name:"週替換深蹲／Hack Squat",variants:["高槓深蹲 (High Bar Squat)","哈克蹲 (Hack Squat)"],sets:4,reps:"6–8"},
+      {name:"保加利亞分腿蹲 (Bulgarian Split Squat)",sets:3,reps:"10–12"},
+      {name:"腿捲曲機 (Leg Curl)",sets:3,reps:"10–12"},
+      {name:"鳥犬式",sets:3,reps:"12–15"}
+    ]
+  },
+  "Day 4":{
+    label:"Chest Vol.2 & Shoulders",
+    muscles:{p:["胸大肌","三頭肌"],s:["前三角肌","側三角肌"]},
+    exercises:[
+      {name:"槓鈴臥推 (Barbell Bench Press)",sets:5,reps:"3–6",note:"波動組"},
+      {name:"窄握臥推 (Close Grip Bench Press)",sets:3,reps:"6–8"},
+      {name:"蝴蝶機夾胸 (Pec Deck Fly)",sets:3,reps:"12–15"},
+      {name:"坐姿啞鈴肩推",sets:3,reps:"8–10"},
+      {name:"啞鈴側平舉",perHand:true,sets:3,reps:"12–15"},
+      {name:"面拉 (Face Pull)",sets:3,reps:"15–20"},
+      {name:"Hanging Leg Raise",sets:3,reps:"15–20"}
+    ]
+  },
+  "Day 5":{
+    label:"Back & Biceps",
+    muscles:{p:["闊背肌","肱二頭肌"],s:["菱形肌","後三角肌"]},
+    exercises:[
+      {name:"離心引體向上 (Negative Pull-up)",sets:4,reps:"3–5"},
+      {name:"窄握滑輪下拉 (V柄)",sets:4,reps:"8–10"},
+      {name:"胸靠式器材划船",sets:4,reps:"8–10"},
+      {name:"坐姿啞鈴二頭彎舉",perHand:true,sets:3,reps:"10–12"},
+      {name:"錘式彎舉",perHand:true,sets:3,reps:"10–12"}
+    ]
+  },
+  "Day 6":{
+    label:"Triceps & Posterior Chain",
+    muscles:{p:["三頭肌","腿後肌群"],s:["臀大肌","豎脊肌"]},
+    exercises:[
+      {name:"滑輪三頭下壓 (繩索)",sets:4,reps:"12–15"},
+      {name:"雙槓支撐 (Dips)",sets:3,reps:"8–12"},
+      {name:"槓鈴羅馬尼亞硬舉 (Barbell RDL)",sets:4,reps:"6–8"},
+      {name:"Hanging Leg Raise",sets:3,reps:"15–20"},
+      {name:"鳥犬式",sets:3,reps:"12–15"}
+    ]
+  },
+  "自由日":{
+    label:"Free Day",
+    muscles:{p:[],s:[]},
+    exercises:[]
+  }
+};
+
+// Helper: exercise entry can be {name,sets,reps} or plain string
+function exName(e){ return typeof e==='string'?e:e.name; }
+function exSets(e){ return typeof e==='string'?null:e.sets; }
+function exReps(e){ return typeof e==='string'?null:e.reps; }
+function exPerHand(e){ return typeof e==='string'?false:!!e.perHand; }
+function exVariants(e){ return typeof e==='string'?null:e.variants||null; }
+
+const KG=2.20462, SK="wl-sets-v1", DK="wl-done-days";
+let activeDay="Day 1", sets={}, unitMap={}, logMd="", finishedDays={}, saveTimer=null;
+let lastSession={};
+let dayStats={};
+let variantMap={}; // { 'Week替換深蹲／Hack Squat': 0 } index into variants array;  // { 'Day 1': { count: N, lastDate: 'YYYY/MM/DD' } }
+
+// ── Single global rest timer ──────────────────────────
+// rest = { ex, day, setIdx, startTs, elapsed, terminated }
+let rest = null;
+let restInterval = null;
+
+function fmtTime(s){
+  const m=Math.floor(s/60), sec=s%60;
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+function startRest(ex, setIdx){
+  // Clear any existing timer
+  if(restInterval){ clearInterval(restInterval); restInterval=null; }
+  rest = { ex, day:activeDay, setIdx, startTs:Date.now(), elapsed:0, terminated:false };
+  restInterval = setInterval(()=>{
+    if(!rest) return;
+    rest.elapsed = Math.floor((Date.now()-rest.startTs)/1000);
+    document.getElementById("rest-banner-timer").textContent = fmtTime(rest.elapsed);
+  }, 1000);
+  document.getElementById("rest-banner").classList.add("active");
+  document.getElementById("rest-banner-exname").textContent = ex;
+  document.getElementById("rest-banner-timer").textContent = "0:00";
+}
+
+function stopRest(save){
+  // save=true: record elapsed into the set; save=false: discard (terminated)
+  if(restInterval){ clearInterval(restInterval); restInterval=null; }
+  if(rest && save && rest.elapsed > 0){
+    const arr = (sets[rest.day]||{})[rest.ex];
+    if(arr && arr[rest.setIdx] !== undefined){
+      arr[rest.setIdx].rest = rest.elapsed;
+      saveSets();
+    }
+  }
+  rest = null;
+  document.getElementById("rest-banner").classList.remove("active");
+}
+
+// Terminate: stop timer and discard rest time
+document.getElementById("btn-terminate").onclick = ()=>{
+  stopRest(false);
+  render();
+};
+
+// ── localStorage ──────────────────────────────────────
+function lsGet(k){try{return localStorage.getItem(k)}catch(_){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(_){}}
+function loadAll(){
+  const s=lsGet(SK); if(s) sets=JSON.parse(s);
+  const d=lsGet(DK); if(d) finishedDays=JSON.parse(d);
+}
+function saveSets(){
+  if(saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>lsSet(SK,JSON.stringify(sets)), 400);
+}
+
+// ── Utils ─────────────────────────────────────────────
+function toDisp(w,u){
+  if(!w) return ""; const v=parseFloat(w); if(isNaN(v)) return "";
+  return u==="kg" ? `${v} kg` : `${Math.round(v*KG)} lb`;
+}
+function getNow(){
+  const d=new Date();
+  return{
+    date:d.toLocaleDateString("zh-TW",{year:"numeric",month:"2-digit",day:"2-digit"}),
+    time:d.toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"})
+  };
+}
+function buildEntry(day,sd,date,time){
+  const{label,muscles}=PLAN[day];
+  const muscleList = Array.isArray(muscles) ? muscles : [...(muscles.p||[]), ...(muscles.s||[])];
+  let md=`\n## ${date} ${time} ｜ ${day} ${label}\n**肌群**：${muscleList.join("、")}\n\n`;
+  // Merge custom exercises into sd
+  const customs = customExercises[day]||[];
+  customs.forEach(exName=>{ if((sets[day]||{})[exName]) sd[exName]=(sets[day]||{})[exName]; });
+  let any=false;
+
+  // Helper to write one exercise block
+  function writeExBlock(ex, es){
+    if(!es.length) return;
+    any=true;
+    const hasRest=es.some(s=>s.rest!=null);
+    if(hasRest){
+      md+=`### ${ex}\n| 組 | 重量 (kg) | 重量 (lb) | 次數 | 組後休息 |\n|---|---|---|---|---|\n`;
+      es.forEach((s,i)=>{
+        const kg=s.weight?`${s.weight} kg`:"—";
+        const lb=s.weight?`${Math.round(parseFloat(s.weight)*KG)} lb`:"—";
+        const r=s.rest!=null ? fmtTime(s.rest) : "—";
+        md+=`| ${i+1} | ${kg} | ${lb} | ${s.reps} 下 | ${r} |\n`;
+      });
+    } else {
+      md+=`### ${ex}\n| 組 | 重量 (kg) | 重量 (lb) | 次數 |\n|---|---|---|---|\n`;
+      es.forEach((s,i)=>{
+        const kg=s.weight?`${s.weight} kg`:"—";
+        const lb=s.weight?`${Math.round(parseFloat(s.weight)*KG)} lb`:"—";
+        md+=`| ${i+1} | ${kg} | ${lb} | ${s.reps} 下 |\n`;
+      });
+    }
+    const ws=es.map(s=>parseFloat(s.weight)).filter(w=>!isNaN(w));
+    if(ws.length){ const mx=Math.max(...ws); md+=`> 最大重量：**${mx} kg / ${Math.round(mx*KG)} lb**\n`; }
+    const rests=es.map(s=>s.rest).filter(r=>r!=null&&r>0);
+    if(rests.length){
+      const avg=Math.round(rests.reduce((a,b)=>a+b,0)/rests.length);
+      md+=`> 平均休息：**${fmtTime(avg)}**\n`;
+    }
+    md+="\n";
+  }
+
+  // Write planned exercises first (preserves order)
+  PLAN[day].exercises.forEach(entry=>{ const ex=exName(entry); writeExBlock(ex, sd[ex]||[]); });
+  // Write custom exercises (covers 自由日 entirely, and supplements for other days)
+  customs.forEach(ex=>{ writeExBlock(ex, sd[ex]||[]); });
+
+  return md+(any?"":"_（無紀錄）_\n")+"---\n";
+}
+
+function toast(msg){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.style.display="block";
+  setTimeout(()=>t.style.display="none", 2500);
+}
+function updateLogStatus(){
+  const el=document.getElementById("log-status");
+  if(!logMd){ el.textContent="未載入"; return; }
+  const m=logMd.match(/^## /gm);
+  const count=m?m.length:0;
+  el.textContent=`${count} 筆紀錄`;
+  updateDayStat();
+}
+function updateDayStat(){
+  // stat-total and stat-label removed, nothing to update here
+}
+
+// ── Parse last session from trainlog.md ───────────────
+function parseLastSession(md){
+  lastSession={};
+  dayStats={};
+  if(!md) return;
+  // Build dayStats: count sessions per day label, track latest date
+  const sessionHeaders = [...md.matchAll(/^## ([\d\/]+)\s+[\S]+\s*｜\s*(Day \d+|自由日)/gm)];
+  sessionHeaders.forEach(m=>{
+    const day=m[2].trim();
+    if(!dayStats[day]) dayStats[day]={count:0,lastDate:null};
+    dayStats[day].count++;
+    dayStats[day].lastDate=m[1]; // keep last (latest appears last in file)
+  });
+  // Split into sessions by ## heading
+  // More robust session splitting
+  const sessions = [];
+  const sessionMatches = [...md.matchAll(/^## .+$/gm)];
+  sessionMatches.forEach((match, i)=>{
+    const start = match.index;
+    const end = i+1 < sessionMatches.length ? sessionMatches[i+1].index : md.length;
+    sessions.push(md.slice(start, end));
+  });
+  // Parse ALL exercises from all sessions (newest first)
+  // No filter - store last seen data for every exercise
+  for(let i=sessions.length-1; i>=0; i--){
+    const block = sessions[i];
+    const exMatches = [...block.matchAll(/^### .+$/gm)];
+    exMatches.forEach((exMatch, ei)=>{
+      const exStart = exMatch.index;
+      const exEnd = ei+1 < exMatches.length ? exMatches[ei+1].index : block.length;
+      const eb = block.slice(exStart, exEnd);
+      const nameMatch = eb.match(/^### (.+)/);
+      if(!nameMatch) return;
+      const exName = nameMatch[1].trim();
+      if(lastSession[exName]) return; // already have most recent
+      const rows = [...eb.matchAll(/^\|\s*(\d+)\s*\|\s*([\d.]+\s*kg|[—\-]+)\s*\|\s*([\d.]+\s*lb|[—\-]+)\s*\|\s*(\d+)\s*下/gm)];
+      if(!rows.length) return;
+      lastSession[exName] = {
+        sets: rows.length,
+        allSets: rows.map(r=>({
+          weight: /[\d.]/.test(r[2])?r[2].replace(/\s*kg$/,'').trim():null,
+          reps: r[4]
+        }))
+      };
+    });
+  }
+}
+
+function updateLogView(){
+  document.getElementById("log-content").textContent=logMd||"← 匯入你的 trainlog.md 開始";
+  updateLogStatus();
+}
+function getLogFilename(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}${m}${day}_train_log.md`;
+}
+function exportMd(content,filename){
+  try {
+    const blob=new Blob([content],{type:"text/plain"});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement("a");
+    a.href=url; a.download=filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 300);
+  } catch(e) {
+    // Fallback: open in new tab for manual save
+    const blob=new Blob([content],{type:"text/plain"});
+    const url=URL.createObjectURL(blob);
+    window.open(url, "_blank");
+  }
+}
+
+// ── Render ─────────────────────────────────────────────
+function getDayLastDate(day){
+  // Get most recent training date for a day from dayStats
+  const ds = dayStats[day];
+  if(!ds||!ds.lastDate) return null;
+  const parts = ds.lastDate.split("/");
+  return new Date(parts[0], parseInt(parts[1])-1, parseInt(parts[2]));
+}
+
+function renderTabs(){
+  const el=document.getElementById("tabs"); el.innerHTML="";
+  const now = new Date();
+
+  // Compute days-since-last-training for each day
+  const daysSince = {};
+  let maxDays = 0;
+  Object.keys(PLAN).forEach(day=>{
+    const lastDate = getDayLastDate(day);
+    if(lastDate){
+      const days = Math.floor((now - lastDate) / (1000*60*60*24));
+      daysSince[day] = days;
+      if(days > maxDays) maxDays = days;
+    } else {
+      daysSince[day] = null; // never trained
+    }
+  });
+
+  Object.keys(PLAN).forEach(day=>{
+    const b=document.createElement("button"); b.className="tab";
+    const done=finishedDays[day];
+    const has=Object.values(sets[day]||{}).some(arr=>Array.isArray(arr)&&arr.length>0);
+
+    if(day===activeDay){
+      b.classList.add("active");
+    } else if(done){
+      b.classList.add("done");
+    } else if(has){
+      b.classList.add("has-sets");
+    } else if(daysSince[day]!==null && day!=="自由日"){
+      // Color by days since last training
+      const days = daysSince[day];
+      const ratio = maxDays > 0 ? days/maxDays : 0;
+      const r = Math.round(255);
+      const g = Math.round(240 - ratio * 130);
+      const gb = Math.round(180 - ratio * 160);
+      b.style.background = `rgb(${r},${g},${gb})`;
+      b.style.borderColor = `rgb(220,${Math.round(g-30)},${Math.round(gb-20)})`;
+      b.style.color = ratio > 0.6 ? "#fff" : "var(--k)";
+    }
+
+    // Show last date below day label
+    const lastDate = getDayLastDate(day);
+    const lastStr = lastDate ? `<span style="display:block;font-size:8px;font-weight:700;opacity:.7;letter-spacing:.3px;">${(lastDate.getMonth()+1)}/${lastDate.getDate()}</span>` : "";
+    if(day==="自由日") b.classList.add("free");
+    b.innerHTML = (done?"✓ ":"")+(day==="自由日"?"＋ 自由":day) + lastStr;
+    b.onclick=()=>{ activeDay=day; render(); updateDayStat(); };
+    el.appendChild(b);
+  });
+}
+function renderDayInfo(){
+  const{label,muscles}=PLAN[activeDay];
+  // Show label + session count if available
+  const ds = dayStats[activeDay];
+  const countStr = ds ? `<span style="font-size:11px;font-weight:700;color:#888;margin-left:8px;letter-spacing:.5px;">已練 ${ds.count} 次　上次 ${ds.lastDate}</span>` : "";
+  document.getElementById("day-label").innerHTML = label.toUpperCase() + countStr;
+  const muscleData = typeof muscles==='object'&&!Array.isArray(muscles) ? muscles : {p:muscles,s:[]};
+  const primaryTags = (muscleData.p||[]).map(m=>`<span class="muscle-tag primary">${m}</span>`).join("");
+  const secondaryTags = (muscleData.s||[]).map(m=>`<span class="muscle-tag secondary">${m}</span>`).join("");
+  const freeTag = activeDay==="自由日" ? `<span style="font-size:10px;font-weight:700;color:#aaa;letter-spacing:.5px;">選擇想補練的動作加入</span>` : "";
+  document.getElementById("muscles").innerHTML = primaryTags + secondaryTags + freeTag;
+  const tot=Object.values(sets[activeDay]||{}).reduce((s,a)=>Array.isArray(a)?s+a.length:s,0);
+  document.getElementById("btn-clear-day").style.display=tot>0?"block":"none";
+}
+function renderExercises(){
+  const cont=document.getElementById("exercises"); cont.innerHTML="";
+  PLAN[activeDay].exercises.forEach(entry=>{ const ex=exName(entry);
+    const activeVariantIdxOuter = exVariants(entry) ? (variantMap[ex]||0) : -1;
+    const activeVariantOuter = activeVariantIdxOuter>=0 ? exVariants(entry)[activeVariantIdxOuter] : null;
+    const esKey = activeVariantOuter||ex;
+    const es=(sets[activeDay]||{})[esKey]||[];
+    const unit=unitMap[ex]||"kg"; const isLb=unit==="lb";
+
+    const card=document.createElement("div"); card.className="ex-card";
+
+    // Header
+    const hdr=document.createElement("div"); hdr.className="ex-header";
+    const recSets=exSets(entry); const recReps=exReps(entry); const perHand=exPerHand(entry);
+    const recBadge=recSets?`<span class="rec-badge">${recSets}×${recReps}</span>`:""; 
+    const phTag=perHand?`<span class="perhand-tag">每手</span>`:""; 
+    const noteTag=entry.note?`<span class="note-tag">${entry.note}</span>`:""; 
+    hdr.innerHTML=`<span class="ex-name">${ex}</span><div class="ex-right">${phTag}${noteTag}${recBadge}${es.length?`<span class="sets-badge">${es.length} 組</span>`:""}<button class="unit-btn ${isLb?"lb":"kg"}">${isLb?"lb→kg":"kg→lb"}</button></div>`;
+    hdr.querySelector(".unit-btn").onclick=()=>{ unitMap[ex]=isLb?"kg":"lb"; renderExercises(); };
+    card.appendChild(hdr);
+
+    // Variant toggle row
+    const variants=exVariants(entry);
+    const activeVariantIdx = variantMap[ex]||0;
+    const activeVariant = variants ? variants[activeVariantIdx] : null;
+    if(variants){
+      const vrow=document.createElement("div"); vrow.className="variant-row";
+      variants.forEach((v,i)=>{
+        const vb=document.createElement("button");
+        vb.className="variant-btn"+(i===activeVariantIdx?" active":"");
+        vb.textContent=v;
+        vb.onclick=()=>{ variantMap[ex]=i; renderExercises(); };
+        vrow.appendChild(vb);
+      });
+      card.appendChild(vrow);
+    }
+
+    // Sets
+    if(es.length){
+      const row=document.createElement("div"); row.className="sets-row";
+      es.forEach((s,i)=>{
+        const chip=document.createElement("div"); chip.className="set-chip"; chip.title="點擊刪除";
+        const restTag=s.rest!=null?`<span class="rest-tag">${fmtTime(s.rest)}</span>`:"";
+        chip.innerHTML=`<span class="set-num">#${i+1}</span>${s.weight?toDisp(s.weight,unit):""}${s.weight&&s.reps?" × ":""}${s.reps}下${restTag}<span class="set-x">✕</span>`;
+        chip.onclick=()=>{ (sets[activeDay][esKey]=sets[activeDay][esKey]||[]).splice(i,1); saveSets(); render(); };
+        row.appendChild(chip);
+      });
+      card.appendChild(row);
+    }
+
+    // Input row
+    const ir=document.createElement("div"); ir.className="input-row";
+    const prev=lastSession[esKey]||lastSession[ex];
+    const curSets=(sets[activeDay]||{})[ex]||[];
+    const setIdx=curSets.length; // 0-based index of the set about to be logged
+    // Pick the matching previous set if available, else fallback to last set
+    let prevSet=null;
+    if(prev&&prev.allSets&&prev.allSets.length>0){
+      prevSet = prev.allSets[setIdx] || prev.allSets[prev.allSets.length-1];
+    }
+    const dispPrevW = prevSet&&prevSet.weight ? (isLb?Math.round(parseFloat(prevSet.weight)*KG)+"lb":prevSet.weight+"kg") : null;
+    const wPh = dispPrevW ? dispPrevW : (prev?"—":(perHand?"每手 kg":"no data"));
+    const rPh = prevSet&&prevSet.reps ? prevSet.reps : "次數";
+    const wi=document.createElement("input"); wi.type="number"; wi.placeholder=wPh; if(isLb) wi.classList.add("lb-mode");
+    const ri=document.createElement("input"); ri.type="number"; ri.placeholder=rPh;
+    const ab=document.createElement("button"); ab.className="btn-add"; ab.textContent="+";
+
+    const doAdd=()=>{
+      // If fields empty, fall back to placeholder values (last session data)
+      let reps=ri.value.trim();
+      let w=wi.value.trim();
+      if(!reps && !w && prevSet){
+        // Use last session's matching set values
+        w = prevSet.weight || "";
+        reps = prevSet.reps || "";
+      } else if(!reps && prevSet&&prevSet.reps){
+        reps = prevSet.reps;
+      }
+      if(!reps) return;
+      if(w&&isLb) w=(parseFloat(w)/KG).toFixed(1);
+
+      // Use variant name if selected
+      const logEx = activeVariant||ex;
+      if(!sets[activeDay]) sets[activeDay]={};
+      if(!sets[activeDay][logEx]) sets[activeDay][logEx]=[];
+      const arr=sets[activeDay][logEx];
+
+      // If there's an active rest timer for THIS exercise's last set → save it
+      if(rest && rest.ex===(activeVariant||ex) && rest.day===activeDay){
+        stopRest(true); // saves elapsed to the previous set
+      } else {
+        // There's a timer for a different exercise → just stop without saving to that one
+        // (user switched exercises, so we don't record cross-exercise rest)
+        stopRest(false);
+      }
+
+      // Add new set
+      const newSetIdx=arr.length;
+      arr.push({reps, weight:w, rest:null});
+
+      // Start rest timer for this new set
+      startRest(activeVariant||ex, newSetIdx);
+
+      wi.value=""; ri.value="";
+      saveSets(); render();
+    };
+
+    wi.addEventListener("keydown",e=>{ if(e.key==="Enter") ri.focus(); });
+    ri.addEventListener("keydown",e=>{ if(e.key==="Enter") doAdd(); });
+    ab.onclick=doAdd;
+
+    const hint=document.createElement("div"); hint.className="convert-hint"; hint.style.display="none";
+    wi.addEventListener("input",()=>{
+      const v=parseFloat(wi.value); if(isNaN(v)){ hint.style.display="none"; return; }
+      hint.textContent=isLb?`≈ ${(v/KG).toFixed(1)} kg`:`≈ ${Math.round(v*KG)} lb`;
+      hint.style.display="block";
+    });
+
+    ir.appendChild(wi); ir.appendChild(ri); ir.appendChild(ab);
+    card.appendChild(ir); card.appendChild(hint);
+    cont.appendChild(card);
+  });
+}
+function renderFinish(){
+  const tot=Object.values(sets[activeDay]||{}).reduce((s,a)=>Array.isArray(a)?s+a.length:s,0);
+  const btn=document.getElementById("btn-finish");
+  const hint=document.getElementById("finish-hint");
+  if(tot>0){ btn.classList.add("active"); btn.textContent=`✓ 結束訓練！（${tot} 組）`; hint.style.display="block"; }
+  else{ btn.classList.remove("active"); btn.textContent="結束訓練"; hint.style.display="none"; }
+}
+function render(){ renderTabs(); renderDayInfo(); renderExercises(); renderCustomExercises(); renderFinish(); }
+
+// ── Events ─────────────────────────────────────────────
+document.getElementById("btn-toggle-monthly").onclick=function(){
+  const mp = document.getElementById("monthly-panel");
+  const show = mp.style.display==="block";
+  // Close other panels first
+  document.getElementById("analysis-panel").style.display="none";
+  document.getElementById("log-panel").style.display="none";
+  document.getElementById("github-panel").style.display="none";
+  document.getElementById("btn-toggle-analysis").textContent="分析";
+  document.getElementById("btn-toggle-log").textContent="日誌";
+  document.getElementById("btn-toggle-github").textContent="⬡ GH";
+  // Toggle monthly
+  mp.style.display = show?"none":"block";
+  this.textContent = show?"月報":"關閉";
+  if(!show) renderMonthly(logMd);
+};
+document.getElementById("btn-toggle-analysis").onclick=function(){
+  const ap=document.getElementById("analysis-panel");
+  const show=ap.style.display==="block";
+  // Close other panels
+  if(!show){
+    document.getElementById("monthly-panel").style.display="none";
+    document.getElementById("btn-toggle-monthly").textContent="月報";
+    document.getElementById("github-panel").style.display="none";
+    document.getElementById("btn-toggle-github").textContent="⬡ GH";
+  }
+  ap.style.display=show?"none":"block";
+  this.textContent=show?"分析":"關閉";
+  if(!show){
+    renderAnalysis();
+  }
+};
+document.getElementById("btn-toggle-log").onclick=function(){
+  const lp=document.getElementById("log-panel");
+  const show=lp.style.display==="block";
+  if(!show){
+    document.getElementById("github-panel").style.display="none";
+    document.getElementById("btn-toggle-github").textContent="⬡ GH";
+  }
+  lp.style.display=show?"none":"block";
+  this.textContent=show?"日誌":"關閉";
+};
+document.getElementById("btn-import").onclick=()=>document.getElementById("file-input").click();
+document.getElementById("file-input").onchange=function(){
+  const file=this.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{ logMd=e.target.result; parseLastSession(logMd); updateLogView(); if(document.getElementById("analysis-panel").style.display==="block") renderAnalysis(); renderAnalysisNew(logMd); prHistory=getPRHistory(logMd); populatePRSelect(); if(document.getElementById("monthly-panel").style.display==="block") renderMonthly(logMd); toast("✅ 已載入 "+file.name); };
+  reader.readAsText(file); this.value="";
+};
+document.getElementById("btn-export").onclick=()=>{
+  if(!logMd){ toast("⚠️ 請先匯入日誌"); return; }
+  exportMd(logMd,getLogFilename());
+};
+document.getElementById("btn-clear-cache").onclick=()=>{
+  if(!confirm("確定要清除所有暫存的訓練紀錄嗎？\n（已匯出的 trainlog 不受影響）")) return;
+  sets={};
+  customExercises={};
+  finishedDays={};
+  saveSets();
+  lsSet(DK, JSON.stringify(finishedDays));
+  localStorage.removeItem(CK);
+  render();
+  toast("✅ 已清除所有暫存紀錄");
+};
+
+document.getElementById("btn-clear-log").onclick=()=>{
+  if(!logMd) return;
+  if(!confirm("確定要清除載入的日誌嗎？")) return;
+  logMd=""; updateLogView();
+};
+document.getElementById("btn-clear-day").onclick=()=>{
+  stopRest(false);
+  delete sets[activeDay]; delete finishedDays[activeDay];
+  saveSets(); lsSet(DK,JSON.stringify(finishedDays)); render();
+};
+document.getElementById("btn-finish").onclick=()=>{
+  try {
+    const ds=sets[activeDay]||{};
+    if(!Object.values(ds).some(s=>s.length>0)){ toast("⚠️ 還沒有任何紀錄！"); return; }
+    stopRest(false);
+    const{date,time}=getNow();
+    const entry=buildEntry(activeDay,ds,date,time);
+    const combined=(logMd||"# 健身訓練日誌\n")+entry;
+    exportMd(combined,getLogFilename());
+    logMd=combined; updateLogView();
+    finishedDays[activeDay]=true; lsSet(DK,JSON.stringify(finishedDays));
+    delete sets[activeDay]; lsSet(SK,JSON.stringify(sets));
+    toast("✅ 訓練完成！已下載 "+getLogFilename());
+    render();
+  } catch(e) {
+    toast("❌ 錯誤："+e.message);
+  }
+};
+
+
+// ── Muscle Scoring System ─────────────────────────────
+// Points per set for each exercise → muscle group
+const MUSCLE_SCORES = {
+  "槓鈴臥推 (Barbell Bench Press)":  {"胸大肌":3,"前三角肌":2,"三頭肌":1},
+  "上斜啞鈴推舉":                     {"胸大肌":3,"前三角肌":2,"三頭肌":1},
+  "蝴蝶機夾胸 (Pec Deck Fly)":       {"胸大肌":3,"前鋸肌":1},
+  "窄握臥推 (Close Grip Bench Press)":     {"胸大肌":2,"三頭肌":3,"前三角肌":1},
+  "雙槓支撐 (Dips)":                  {"胸大肌":2,"三頭肌":3,"前三角肌":1},
+  "滑輪三頭下壓 (繩索)":              {"三頭肌":3},
+  "滑輪過頭三頭伸展 (Cable Overhead Extension)": {"三頭肌":3},
+  "Hanging Leg Raise":               {"核心":3},
+  "鳥犬式":                           {"核心":2,"豎脊肌":2},
+  "滑輪下拉 (寬手柄)":               {"闊背肌":3,"肱二頭肌":1,"後三角肌":1},
+  "單臂啞鈴划船":                     {"闊背肌":2,"菱形肌":2,"肱二頭肌":1},
+  "地雷管划船 (Landmine Row)":        {"闊背肌":2,"菱形肌":2,"大圓肌":1},
+  "直臂下拉 (Straight Arm Pulldown)":{"闊背肌":3},
+  "面拉 (Face Pull)":                 {"後三角肌":3,"菱形肌":2,"外旋肌":1},
+  "高槓深蹲 (High Bar Squat)":       {"股四頭肌":3,"臀大肌":2,"豎脊肌":1},
+  "週替換深蹲／Hack Squat":          {"股四頭肌":3,"臀大肌":2,"豎脊肌":1},
+  "週替換深蹲 (六角槓/高槓)":        {"股四頭肌":3,"臀大肌":2,"豎脊肌":1},
+  "哈克蹲 (Hack Squat)":             {"股四頭肌":3,"臀大肌":2},
+  "腿推機 (Leg Press)":              {"股四頭肌":3,"臀大肌":1},
+  "腿捲曲機 (Leg Curl)":             {"腿後肌群":3,"臀大肌":1},
+  "Ab Wheel Rollout":                {"核心":3},
+  "坐姿啞鈴肩推":                    {"前三角肌":3,"側三角肌":2,"三頭肌":1},
+  "站姿槓鈴肩推 (Standing Barbell Press)": {"前三角肌":3,"側三角肌":2,"三頭肌":1},
+  "啞鈴側平舉":                      {"側三角肌":3,"前三角肌":1},
+  "滑輪後三角飛鳥 (Rear Delt Fly)":  {"後三角肌":3,"菱形肌":1},
+  "窄握滑輪下拉 (V柄)":              {"闊背肌":3,"大圓肌":2,"肱二頭肌":1},
+  "胸靠式器材划船":                   {"菱形肌":3,"闊背肌":2,"肱二頭肌":1},
+  "直臂下拉 (Pullover)":             {"闊背肌":3,"大圓肌":1},
+  "啞鈴二頭彎舉":                    {"肱二頭肌":3},
+  "坐姿啞鈴二頭彎舉":               {"肱二頭肌":3},
+  "錘式彎舉":                        {"肱二頭肌":2,"肱肌":2},
+  "集中彎舉 (Concentration Curl)":   {"肱二頭肌":3},
+  "槓鈴羅馬尼亞硬舉 (Barbell RDL)": {"腿後肌群":3,"臀大肌":2,"豎脊肌":2},
+  "保加利亞分腿蹲 (Bulgarian Split Squat)": {"股四頭肌":2,"臀大肌":3,"腿後肌群":1},
+  "離心引體向上 (Negative Pull-up)": {"闊背肌":3,"肱二頭肌":2,"菱形肌":1},
+  "彈力帶輔助引體向上 (Band Pull-up)":{"闊背肌":3,"肱二頭肌":2},
+};
+
+// Muscle groups for radar (8 categories)
+const RADAR_MUSCLES = ["胸大肌","闊背肌","股四頭肌","腿後肌群","前三角肌","側三角肌","肱二頭肌","三頭肌"];
+const RADAR_COLORS = ["#FF2D55","#0057FF","#FF8C00","#00C853","#FF6B35","#FFE600","#9B59B6","#00BCD4"];
+
+function analyzeMuscleSessions(md){
+  if(!md) return null;
+  const now = new Date();
+  const cutoff = new Date(now - 28*24*60*60*1000);
+
+  // Time decay weights by week (most recent = highest)
+  function weekWeight(sessionDate){
+    const daysAgo = (now - sessionDate) / (1000*60*60*24);
+    if(daysAgo <= 7)  return 0.40;
+    if(daysAgo <= 14) return 0.30;
+    if(daysAgo <= 21) return 0.20;
+    return 0.10;
+  }
+
+  // More robust session splitting
+  const sessions = [];
+  const sessionMatches = [...md.matchAll(/^## .+$/gm)];
+  sessionMatches.forEach((match, i)=>{
+    const start = match.index;
+    const end = i+1 < sessionMatches.length ? sessionMatches[i+1].index : md.length;
+    sessions.push(md.slice(start, end));
+  });
+  const muscleVolume = {}; // weighted volume per muscle
+
+  sessions.forEach(session=>{
+    const dateMatch = session.match(/^## (\d{4})\/(\d{2})\/(\d{2})/m);
+    if(!dateMatch) return;
+    const sessionDate = new Date(dateMatch[1], dateMatch[2]-1, dateMatch[3]);
+    if(sessionDate < cutoff) return;
+    const wt = weekWeight(sessionDate);
+
+    // More robust exercise block parsing
+    const exMatches = [...session.matchAll(/^### .+$/gm)];
+    exMatches.forEach((exMatch, ei)=>{
+      const exStart = exMatch.index;
+      const exEnd = ei+1 < exMatches.length ? exMatches[ei+1].index : session.length;
+      const eb = session.slice(exStart, exEnd);
+      const nameMatch = eb.match(/^### (.+)/);
+      if(!nameMatch) return;
+      const exName = nameMatch[1].trim();
+      const scores = MUSCLE_SCORES[exName];
+      if(!scores) return;
+
+      const rows = [...eb.matchAll(/\|\s*\d+\s*\|\s*([\d.]+)\s*kg\s*\|\s*[\d.]+\s*lb\s*\|\s*(\d+)\s*下/gm)];
+      let exVolume = 0;
+      if(rows.length > 0){
+        rows.forEach(r=>{
+          const kg = parseFloat(r[1]);
+          const reps = parseInt(r[2]);
+          if(!isNaN(kg) && !isNaN(reps)) exVolume += kg * reps;
+        });
+      } else {
+        return;
+      }
+      if(exVolume === 0) return;
+
+      const totalScore = Object.values(scores).reduce((a,b)=>a+b, 0);
+      Object.entries(scores).forEach(([muscle, pts])=>{
+        const ratio = pts / totalScore;
+        muscleVolume[muscle] = (muscleVolume[muscle]||0) + exVolume * ratio * wt;
+      });
+    });
+  });
+
+  // Also count sets for no-weight exercises separately
+  const bwSets = {};
+  sessions.forEach(session=>{
+    const dateMatch = session.match(/^## (\d{4})\/(\d{2})\/(\d{2})/m);
+    if(!dateMatch) return;
+    const sessionDate = new Date(dateMatch[1], dateMatch[2]-1, dateMatch[3]);
+    if(sessionDate < cutoff) return;
+    const exBlocks = session.split(/(?=^### )/m).slice(1);
+    exBlocks.forEach(eb=>{
+      const nameMatch = eb.match(/^### (.+)/);
+      if(!nameMatch) return;
+      const exName = nameMatch[1].trim();
+      const hasWeight = eb.match(/^\|\s*\d+\s*\|\s*[\d.]+\s*kg/m);
+      if(hasWeight) return;
+      const rows = [...eb.matchAll(/^\|\s*\d+\s*\|/gm)];
+      if(!rows.length) return;
+      bwSets[exName] = (bwSets[exName]||0) + rows.length;
+    });
+  });
+  muscleVolume._bwSets = bwSets;
+
+  return muscleVolume;
+}
+
+function getMuscleImbalances(volumeMap){
+  const warnings = [];
+
+  // Helper
+  const v = m => volumeMap[m]||0;
+
+  // 1. 背應該是胸的 1.5–2 倍
+  // 把所有背部肌群加總 vs 胸
+  const backVol = v("闊背肌") + v("菱形肌") + v("大圓肌");
+  const chestVol = v("胸大肌");
+  if(chestVol > 0 && backVol > 0){
+    const ratio = backVol / chestVol;
+    if(ratio < 1.3){
+      warnings.push(`⚠️ 背部訓練量不足：背/胸比例 ${ratio.toFixed(1)}x（建議 1.5–2x）`);
+    } else if(ratio >= 1.3 && ratio < 1.5){
+      warnings.push(`💡 背/胸比例 ${ratio.toFixed(1)}x，略低，建議提升至 1.5x`);
+    }
+  }
+
+  // 2. 腿後肌群應該至少是股四頭的 0.7 倍
+  const hamVol = v("腿後肌群");
+  const quadVol = v("股四頭肌");
+  if(quadVol > 0 && hamVol > 0){
+    const ratio = hamVol / quadVol;
+    if(ratio < 0.6){
+      warnings.push(`⚠️ 腿後肌群訓練不足：腿後/股四頭比例 ${ratio.toFixed(1)}x（建議 ≥ 0.7x）`);
+    }
+  } else if(quadVol > 0 && hamVol === 0){
+    warnings.push(`⚠️ 無腿後肌群紀錄，注意前後側鏈平衡`);
+  }
+
+  // 3. 後三角應該至少是前三角的 0.8 倍
+  const rearDeltVol = v("後三角肌");
+  const frontDeltVol = v("前三角肌");
+  if(frontDeltVol > 0 && rearDeltVol > 0){
+    const ratio = rearDeltVol / frontDeltVol;
+    if(ratio < 0.6){
+      warnings.push(`⚠️ 後三角肌訓練不足：後/前三角比例 ${ratio.toFixed(1)}x（建議 ≥ 0.8x）`);
+    } else if(ratio < 0.8){
+      warnings.push(`💡 後三角略低，比例 ${ratio.toFixed(1)}x，長期可能造成肩膀前傾`);
+    }
+  }
+
+  // 4. 二頭 vs 三頭 — 接近 1:1 即可，超過 1.4 倍任一方才警告
+  const bicepVol = v("肱二頭肌");
+  const tricepVol = v("三頭肌");
+  if(bicepVol > 0 && tricepVol > 0){
+    const ratio = bicepVol / tricepVol;
+    if(ratio > 1.4){
+      warnings.push(`💡 二頭訓練量（${ratio.toFixed(1)}x）明顯高於三頭，可以平衡一下`);
+    } else if(tricepVol / bicepVol > 1.4){
+      warnings.push(`💡 三頭訓練量（${(tricepVol/bicepVol).toFixed(1)}x）明顯高於二頭，可以平衡一下`);
+    }
+  }
+
+  // 5. 核心訓練量提示（如果太少）
+  const coreVol = v("核心");
+  const totalVol = Object.values(volumeMap).reduce((a,b)=>a+b,0);
+  if(totalVol > 0 && coreVol/totalVol < 0.03){
+    warnings.push(`💡 核心訓練量偏低（佔總量 ${(coreVol/totalVol*100).toFixed(0)}%）`);
+  }
+
+  return warnings;
+}
+
+function renderAnalysis(){
+  const panel = document.getElementById("analysis-content");
+  const empty = document.getElementById("analysis-empty");
+  if(!logMd){
+    panel.style.display="none"; empty.style.display="block"; return;
+  }
+  panel.style.display="block"; empty.style.display="none";
+
+  const points = analyzeMuscleSessions(logMd);
+
+
+
+  if(!points||Object.keys(points).length===0){
+    panel.style.display="none"; empty.style.display="block";
+    empty.textContent="近4週無訓練紀錄"; return;
+  }
+
+  // Set date range label
+  const now = new Date();
+  const cutoff = new Date(now - 28*24*60*60*1000);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+  document.getElementById("analysis-range").textContent = `${fmt(cutoff)} – ${fmt(now)} · 時間加權`;
+
+  // Render weight targets
+  renderAnalysisNew(logMd);
+
+  // PR chart
+  prHistory = getPRHistory(logMd);
+  populatePRSelect();
+  const sel = document.getElementById("pr-exercise-select");
+  if(sel && sel.value) renderPRChart(sel.value);
+
+
+
+  // Render bodyweight/no-weight exercise summary
+  const bwSets = points._bwSets || {};
+  const bwEl = document.getElementById("bw-summary");
+  if(bwEl && Object.keys(bwSets).length > 0){
+    const bwItems = Object.entries(bwSets).map(([name, sets])=>
+      `<span style="background:#f0f0f0;border:1.5px solid #ddd;border-radius:3px;padding:2px 8px;font-size:9px;font-weight:900;color:#666;letter-spacing:.5px;">${name} ${sets}組</span>`
+    ).join("");
+    bwEl.innerHTML = `<div style="font-size:10px;font-weight:900;color:#888;letter-spacing:2px;margin-bottom:6px;text-transform:uppercase;">徒手／穩定動作</div><div style="display:flex;flex-wrap:wrap;gap:5px;">${bwItems}</div>`;
+  }
+
+  // Imbalance warnings
+  const warnings = getMuscleImbalances(points);
+  let warningEl = document.getElementById("imbalance-warnings");
+  if(!warningEl){
+    warningEl = document.createElement("div");
+    warningEl.id = "imbalance-warnings";
+    warningEl.style.cssText = "margin-bottom:12px;display:flex;flex-direction:column;gap:5px;";
+    document.getElementById("bar-chart").before(warningEl);
+  }
+  warningEl.innerHTML = warnings.length
+    ? warnings.map(w=>`<div style="background:rgba(255,45,85,.08);border:1.5px solid rgba(255,45,85,.3);border-radius:4px;padding:6px 10px;font-size:10px;font-weight:700;color:var(--r);letter-spacing:.3px;">${w}</div>`).join("")
+    : `<div style="background:rgba(0,200,83,.08);border:1.5px solid rgba(0,200,83,.3);border-radius:4px;padding:6px 10px;font-size:10px;font-weight:700;color:#00a854;letter-spacing:.3px;">✓ 各肌群訓練量平衡良好</div>`;
+
+  // Sort by volume
+  const sorted = Object.entries(points).filter(([k])=>k!=="_bwSets").sort((a,b)=>b[1]-a[1]);
+  const maxPts = sorted[0][1];
+
+  // Bar chart - show weighted volume
+  const barChart = document.getElementById("bar-chart");
+  barChart.innerHTML="";
+  sorted.forEach(([muscle, vol])=>{
+    const pct = Math.round(vol/maxPts*100);
+    const displayVol = Math.round(vol).toLocaleString();
+    const row = document.createElement("div"); row.className="bar-row";
+    row.innerHTML=`
+      <div class="bar-label">${muscle}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <div class="bar-score" style="width:52px;font-size:9px;">${displayVol}</div>`;
+    barChart.appendChild(row);
+  });
+
+  // Radar chart
+  const canvas = document.getElementById("radar-canvas");
+  const ctx = canvas.getContext("2d");
+  const W=360, H=300, cx=180, cy=150, r=95;
+  ctx.clearRect(0,0,W,H);
+
+  const n = RADAR_MUSCLES.length;
+  const angles = RADAR_MUSCLES.map((_,i)=> -Math.PI/2 + (2*Math.PI/n)*i);
+
+  // Grid rings
+  [0.25,0.5,0.75,1].forEach(frac=>{
+    ctx.beginPath();
+    angles.forEach((a,i)=>{
+      const x=cx+Math.cos(a)*r*frac, y=cy+Math.sin(a)*r*frac;
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.closePath();
+    ctx.strokeStyle="rgba(0,0,0,.1)"; ctx.lineWidth=1; ctx.stroke();
+  });
+
+  // Spokes
+  angles.forEach(a=>{
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r);
+    ctx.strokeStyle="rgba(0,0,0,.1)"; ctx.lineWidth=1; ctx.stroke();
+  });
+
+  // Data polygon
+  const radarMax = Math.max(...RADAR_MUSCLES.map(m=>points[m]||0), 1);
+  ctx.beginPath();
+  RADAR_MUSCLES.forEach((m,i)=>{
+    const val=(points[m]||0)/radarMax;
+    const x=cx+Math.cos(angles[i])*r*val;
+    const y=cy+Math.sin(angles[i])*r*val;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.closePath();
+  ctx.fillStyle="rgba(255,45,85,.2)"; ctx.fill();
+  ctx.strokeStyle="#FF2D55"; ctx.lineWidth=2.5; ctx.stroke();
+
+  // Dots
+  RADAR_MUSCLES.forEach((m,i)=>{
+    const val=(points[m]||0)/radarMax;
+    const x=cx+Math.cos(angles[i])*r*val;
+    const y=cy+Math.sin(angles[i])*r*val;
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2);
+    ctx.fillStyle=RADAR_COLORS[i]; ctx.fill();
+    ctx.strokeStyle='#111'; ctx.lineWidth=1.5; ctx.stroke();
+  });
+
+  // Labels - with enough offset and bg for readability
+  ctx.font="bold 10px 'Nunito',Arial,sans-serif";
+  RADAR_MUSCLES.forEach((m,i)=>{
+    const cosA=Math.cos(angles[i]);
+    const sinA=Math.sin(angles[i]);
+    // Extra horizontal offset for left/right labels to avoid clipping
+    const hExtra = Math.abs(cosA)>0.7 ? 10 : 0;
+    const offset=r+20+hExtra;
+    const lx=cx+cosA*offset;
+    const ly=cy+sinA*offset;
+    ctx.textAlign = cosA>0.2?"left":cosA<-0.2?"right":"center";
+    ctx.textBaseline = sinA>0.2?"top":sinA<-0.2?"bottom":"middle";
+
+    // Background pill for readability
+    const tw=ctx.measureText(m).width;
+    const th=12;
+    const pad=3;
+    let bx=lx, by=ly-th/2-pad;
+    if(ctx.textAlign==="center") bx=lx-tw/2-pad;
+    else if(ctx.textAlign==="right") bx=lx-tw-pad*2;
+    else bx=lx-pad;
+    ctx.fillStyle="rgba(255,253,240,.85)";
+    ctx.fillRect(bx, by, tw+pad*2, th+pad*2);
+
+    // Text
+    ctx.fillStyle=RADAR_COLORS[i];
+    ctx.fillText(m,lx,ly);
+  });
+}
+
+
+// ── Weight Target System ──────────────────────────────
+// Cross-muscle antagonist ratios (scientifically based)
+// Format: { muscle: { anchor: anchorExercise, ratio: target/anchor } }
+
+// Representative exercise per muscle group
+const ANCHORS = {
+  "胸":   "槓鈴臥推",       // estimated from dumbbell if not recorded
+  "背":   "滑輪下拉 (寬手柄)",
+  "腿前": "高槓深蹲 (High Bar Squat)",
+  "腿後": "槓鈴羅馬尼亞硬舉 (Barbell RDL)",
+  "肩":   "坐姿啞鈴肩推",
+  "二頭": "啞鈴二頭彎舉",
+  "三頭": "滑輪三頭下壓 (繩索)",
+};
+
+// Cross-muscle antagonist standards
+// Each pair: { a, b, idealRatio: b/a }
+// idealRatio means: b should be (idealRatio × a) for balance
+// We find which side you have data for, compute what the other SHOULD be,
+// and only show it as a "target" if you haven't reached it yet.
+// ── Strength Analysis System ─────────────────────────
+// Epley 1RM
+function epley1RM(w,r){ return r<=1?w:w*(1+r/30); }
+
+// Parse all sets from trainlog, only use ≥6 reps for 1RM estimation
+function getOneRMs(md){
+  if(!md) return {};
+  const allSets={};
+  const sessions=md.split(/(?=^## )/m).filter(s=>s.trim().startsWith("##"));
+  sessions.forEach(session=>{
+    session.split(/(?=^### )/m).slice(1).forEach(eb=>{
+      const nm=eb.match(/^### (.+)/); if(!nm) return;
+      const ex=nm[1].trim();
+      if(!allSets[ex]) allSets[ex]=[];
+      [...eb.matchAll(/^\|\s*\d+\s*\|\s*([\d.]+)\s*kg\s*\|\s*[\d.]+\s*lb\s*\|\s*(\d+)\s*下/gm)]
+        .forEach(r=>{ const w=parseFloat(r[1]),reps=parseInt(r[2]); if(w>0&&reps>0) allSets[ex].push([w,reps]); });
+    });
+  });
+  const oneRM={};
+  Object.entries(allSets).forEach(([ex,sets])=>{
+    // Best Epley accuracy: 6-9 reps; fallback to 4-11, then all
+    const r69  = sets.filter(([,r])=>r>=6&&r<=9);
+    const r411 = sets.filter(([,r])=>r>=4&&r<=11);
+    const use  = r69.length?r69:r411.length?r411:sets;
+    oneRM[ex]=Math.round(Math.max(...use.map(([w,r])=>epley1RM(w,r)))*10)/10;
+    oneRM[ex+'_hasValid']=r69.length>0;
+  });
+  return oneRM;
+}
+
+// Cross-estimate bench press 1RM from multiple exercises
+function estimateBench(oneRM){
+  const sources=[
+    {ex:"啞鈴臥推",                              fn:w=>w*2*1.15},
+    {ex:"上斜啞鈴推舉",                           fn:w=>w/0.38},
+    {ex:"槓鈴臥推 (Barbell Bench Press)",        fn:w=>w},
+    {ex:"槓鈴臥推 波動組 (Bench Press Wave)",    fn:w=>w},
+  ];
+  const ests=sources.filter(s=>oneRM[s.ex]).map(s=>({ex:s.ex,val:Math.round(s.fn(oneRM[s.ex]))}));
+  if(!ests.length) return null;
+  const mean=ests.reduce((a,e)=>a+e.val,0)/ests.length;
+  const std=Math.sqrt(ests.reduce((a,e)=>a+(e.val-mean)**2,0)/ests.length);
+  const filtered=ests.filter(e=>Math.abs(e.val-mean)<=std*1.5);
+  return {
+    kg: Math.round(filtered.reduce((a,e)=>a+e.val,0)/filtered.length),
+    n: filtered.length,
+    std: Math.round(std),
+  };
+}
+
+// Antagonist pairs: each pair compares two muscles head to head
+// ratio = b/a ideal. If actual ratio is off, the weaker side needs work.
+const ANTAG=[
+  {
+    label:"胸 vs 背",
+    aLabel:"臥推", bLabel:"單臂划船(雙手等效)",
+    aKey:"_bench", bKey:"_back",
+    ideal:0.85, range:[0.70,1.00],
+    note:"單臂划船雙手等效應達臥推的 70–100%"
+  },
+  {
+    // Only shows when both squat AND RDL are recorded
+    label:"股四頭 vs 腿後",
+    aLabel:"深蹲", bLabel:"RDL（含槓）",
+    aKey:"_squat", bKey:"_rdl",
+    ideal:0.75, range:[0.65,0.85],
+    note:"腿後應達深蹲的 65–85%"
+  },
+  {
+    label:"前三角 vs 後三角",
+    aLabel:"槓鈴肩推", bLabel:"面拉",
+    aKey:"_shoulder",        bKey:"面拉 (Face Pull)",
+    ideal:0.30, range:[0.25,0.40],
+    note:"面拉應達肩推雙手的 25–40%，不足代表後三角偏弱"
+  },
+  {
+    label:"三頭 vs 二頭",
+    aLabel:"窄握臥推", bLabel:"坐姿二頭彎舉(雙手)",
+    aKey:"_tricep", bKey:"_bicep",
+    ideal:0.85, range:[0.70,1.00],
+    note:"二頭應達窄握臥推的 70–100%"
+  },
+];
+
+// Same-group internal checks: is each exercise proportional within its group?
+const INTRA=[
+  // Back: relative to single arm row (free weight anchor, most reliable)
+  // anchor is stored as total (perhand × 2), checks use perhand where unit="perhand"
+  {group:"背部", anchor:"_back",
+   checks:[
+     {ex:"地雷管划船 (Landmine Row)", ideal:0.65, range:[0.50,0.80], note:"地雷管（槓片）約單臂雙手等效65%"},
+   ]},
+  // Shoulder: relative to barbell shoulder press
+  {group:"肩部", anchor:"_shoulderPH",
+   checks:[
+     {ex:"啞鈴側平舉", ideal:0.35, range:[0.25,0.50], unit:"perhand", note:"側平舉每手約肩推總重35%（肩推為總重）"},
+   ]},
+  // Chest: only shows when barbell bench is directly recorded
+  {group:"胸部", anchor:"槓鈴臥推 (Barbell Bench Press)",
+   checks:[
+     {ex:"上斜啞鈴推舉",              ideal:0.40, range:[0.32,0.48], unit:"perhand", note:"上斜每手約臥推40%"},
+     {ex:"窄握臥推 (Close Grip Bench Press)", ideal:0.85, range:[0.75,0.95], note:"窄握臥推約臥推85%"},
+     {ex:"蝴蝶機夾胸 (Pec Deck Fly)", ideal:0.55, range:[0.45,0.70], note:"蝴蝶機約臥推55%"},
+   ]},
+  // Legs: only shows when squat is recorded
+  {group:"腿部", anchor:"_squat",
+   checks:[
+     {ex:"槓鈴羅馬尼亞硬舉 (Barbell RDL)", ideal:0.75, range:[0.65,0.85], note:"RDL（含槓總重）應達深蹲65–85%"},
+     {ex:"保加利亞分腿蹲 (Bulgarian Split Squat)", ideal:0.35, range:[0.25,0.45], unit:"perhand", note:"保加利亞每手約深蹲35%"},
+     {ex:"腿捲曲機 (Leg Curl)", ideal:0.45, range:[0.35,0.55], note:"腿捲曲機約深蹲45%"},
+   ]},
+  // Arms: bicep vs hammer curl (both recorded = show)
+  {group:"手臂", anchor:"啞鈴二頭彎舉",
+   checks:[
+     {ex:"錘式彎舉", ideal:1.05, range:[0.90,1.20], unit:"perhand", note:"錘式彎舉應與二頭彎舉接近"},
+   ]},
+];
+
+function buildAnchors(oneRM){
+  // Use direct barbell bench if available, else cross-estimate
+  const directBench=oneRM["槓鈴臥推 (Barbell Bench Press)"]||oneRM["槓鈴臥推 波動組 (Bench Press Wave)"]||null;
+  const bench=directBench?{kg:directBench,n:1,std:0,direct:true}:estimateBench(oneRM);
+  // For antagonist analysis: only use barbell squat (not hack squat - different loading)
+  const squat=oneRM["高槓深蹲 (High Bar Squat)"]||oneRM["週替換深蹲 (六角槓/高槓)"]||null;
+  const rdlPlates=oneRM["槓鈴羅馬尼亞硬舉 (Barbell RDL)"];
+  // Back anchor: single arm row (free weight, perhand×2 for total)
+  const singleArmRM = oneRM["單臂啞鈴划船"];
+  const backTotal = singleArmRM ? Math.round(singleArmRM * 2 * 10) / 10 : null;
+
+  // Bicep: seated curl preferred, fallback to standing
+  const bicepRM = oneRM["坐姿啞鈴二頭彎舉"] || oneRM["啞鈴二頭彎舉"] || null;
+
+  // Tricep: close grip bench (free weight)
+  const tricepRM = oneRM["窄握臥推 (Close Grip Bench Press)"] || null;
+
+  return {
+    _bench:      bench?bench.kg:null,
+    _benchInfo:  bench,
+    _squat:      squat,
+    _rdl:        rdlPlates||null, // total weight including bar
+    _shoulder:   oneRM["坐姿啞鈴肩推"]||null,
+    _shoulderPH: oneRM["坐姿啞鈴肩推"]||null,
+    _bicep:      bicepRM ? bicepRM*2 : null,  // perhand×2
+    _tricep:     tricepRM || null,
+    _back:       backTotal,
+    ...oneRM,
+  };
+}
+
+function renderAnalysisNew(md){
+  const el=document.getElementById("weight-targets");
+  if(!el) return;
+  el.innerHTML="";
+  if(!md){el.innerHTML='<div style="font-size:11px;color:#aaa;font-weight:700;">匯入日誌後顯示</div>';return;}
+
+  const oneRM=getOneRMs(md);
+  const anchors=buildAnchors(oneRM);
+
+  // ── Bench estimation info ──
+  if(anchors._benchInfo){
+    const b=anchors._benchInfo;
+    const label=b.direct
+      ?`臥推直接紀錄：<strong>${b.kg} kg</strong>`
+      :(b.n>1?`臥推交叉估算：<strong>${b.kg} kg</strong>（${b.n} 個動作驗證，標準差 ±${b.std}kg）`:`臥推估算：<strong>${b.kg} kg</strong>（單一來源，準確度較低）`);
+    el.innerHTML+=`<div style="background:rgba(0,87,255,.07);border:1.5px solid rgba(0,87,255,.25);border-radius:4px;padding:8px 10px;margin-bottom:12px;font-size:10px;font-weight:700;color:var(--b);">${label}</div>`;
+  }
+
+  // ── Section helper ──
+  function section(title, content){
+    return `<div style="margin-bottom:14px;">
+      <div style="font-size:10px;font-weight:900;color:var(--k);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:3px solid var(--k);">${title}</div>
+      ${content}
+    </div>`;
+  }
+
+  function statusBar(actual, ideal, range, aLabel, aKg, bLabel, bKg, note, unitLabel){
+    if(bKg===null||bKg===undefined) return `<div style="padding:6px 0;font-size:10px;color:#aaa;">${bLabel}：尚無紀錄（目標 ${Math.round(aKg*ideal)}kg${unitLabel}）</div>`;
+    const ratio=bKg/aKg;
+    const inRange=ratio>=range[0]&&ratio<=range[1];
+    const tooLow=ratio<range[0];
+    const color=inRange?"#00C853":tooLow?"#FF2D55":"#FF8C00";
+    const icon=inRange?"✓ 平衡":tooLow?"✕ 偏弱":"△ 偏強";
+    const iColor=inRange?"#00a854":tooLow?"var(--r)":"#e07000";
+    const pct=Math.min(Math.round(ratio/range[1]*100),100);
+    return `<div style="padding:6px 0;border-bottom:1px solid #f5f5f5;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;">
+        <div>
+          <span style="font-size:11px;font-weight:900;color:var(--k);">${bLabel}</span>
+          <div style="font-size:9px;color:#999;margin-top:1px;">${note}</div>
+          <div style="font-size:9px;color:#aaa;">${aLabel} ${Math.round(aKg)}kg → 實際比例 <strong>${ratio.toFixed(2)}x</strong>（理想 ${range[0]}–${range[1]}x）</div>
+        </div>
+        <span style="font-size:11px;font-weight:900;color:${iColor};white-space:nowrap;margin-left:8px;">${icon}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="flex:1;background:#eee;border:1px solid #ddd;border-radius:2px;height:8px;overflow:hidden;">
+          <div style="height:100%;background:${color};width:${pct}%;"></div>
+        </div>
+        <span style="font-size:9px;color:#888;white-space:nowrap;min-width:100px;text-align:right;font-weight:700;">
+          現在 ${bKg}kg${unitLabel}
+        </span>
+      </div>
+    </div>`;
+  }
+
+  // ── 1. Antagonist pairs ──
+  let antagonistHTML="";
+  ANTAG.forEach(({label,aLabel,bLabel,aKey,bKey,ideal,range,note})=>{
+    const aW=anchors[aKey];
+    const bW=anchors[bKey];
+    if(!aW) return;
+    antagonistHTML+=statusBar(aW,ideal,range,aLabel,aW,bLabel,bW,note,"");
+  });
+  if(antagonistHTML) el.innerHTML+=section("⚖️ 拮抗肌群平衡",antagonistHTML);
+
+  // ── 2. Intra-group checks ──
+  INTRA.forEach(({group,anchor,checks})=>{
+    const anchorW=anchors[anchor];
+    if(!anchorW) return;
+    let html="";
+    checks.forEach(({ex,ideal,range,unit,note})=>{
+      const raw=oneRM[ex];
+      const unitLabel=unit==="perhand"?"/手":"";
+      html+=statusBar(anchorW,ideal,range,
+        anchor.startsWith("_")?anchor.replace("_bench","臥推估算").replace("_shoulderPH","槓鈴肩推").replace("_back","單臂划船(雙手等效)"):anchor,
+        anchorW, ex, raw, note, unitLabel);
+    });
+    if(html) el.innerHTML+=section(group+" 動作比例",html);
+  });
+
+  // ── 3. Unit anomaly detection ──
+  const anomalyChecks=[
+    {a:"啞鈴臥推",       b:"上斜啞鈴推舉",       expected:1.0, tolerance:0.3, label:"臥推 vs 上斜推舉（同為每手）"},
+    {a:"坐姿啞鈴肩推",   b:"啞鈴側平舉",         expected:0.35, tolerance:0.15, label:"肩推（總重）vs 側平舉（每手）"},
+  ];
+  let anomalyHTML="";
+  anomalyChecks.forEach(({a,b,expected,tolerance,label})=>{
+    const aW=oneRM[a],bW=oneRM[b];
+    if(!aW||!bW) return;
+    const ratio=bW/aW;
+    const dev=Math.abs(ratio-expected)/expected;
+    if(dev>tolerance){
+      const msg=dev>0.6?"⚠️ 可能記錯單位":"💡 比例偏差，確認重量";
+      anomalyHTML+=`<div style="padding:5px 8px;background:rgba(255,45,85,.07);border:1.5px solid rgba(255,45,85,.3);border-radius:3px;font-size:10px;font-weight:700;color:var(--r);">
+        ${msg}：${label}（實際比例 ${ratio.toFixed(2)}x，預期 ${expected}x）
+      </div>`;
+    }
+  });
+  if(anomalyHTML) el.innerHTML+=section("🔍 數據一致性檢查",anomalyHTML);
+}
+
+
+// ── PR Trend Chart ────────────────────────────────────
+function getPRHistory(md){
+  // Returns { exName: [ {date, oneRM, weight, reps} ] } sorted by date
+  if(!md) return {};
+  const history = {};
+  const sessionMatches = [...md.matchAll(/^## .+$/gm)];
+  sessionMatches.forEach((match, i)=>{
+    const start = match.index;
+    const end = i+1 < sessionMatches.length ? sessionMatches[i+1].index : md.length;
+    const session = md.slice(start, end);
+
+    const dateMatch = session.match(/^## (\d{4})\/(\d{2})\/(\d{2})/m);
+    if(!dateMatch) return;
+    const dateStr = dateMatch[1]+'/'+dateMatch[2]+'/'+dateMatch[3];
+    const dateObj = new Date(dateMatch[1], dateMatch[2]-1, dateMatch[3]);
+
+    const exMatches = [...session.matchAll(/^### .+$/gm)];
+    exMatches.forEach((exMatch, ei)=>{
+      const exStart = exMatch.index;
+      const exEnd = ei+1 < exMatches.length ? exMatches[ei+1].index : session.length;
+      const eb = session.slice(exStart, exEnd);
+      const nm = eb.match(/^### (.+)/);
+      if(!nm) return;
+      const exName = nm[1].trim();
+
+      const rows = [...eb.matchAll(/\|\s*\d+\s*\|\s*([\d.]+)\s*kg\s*\|\s*[\d.]+\s*lb\s*\|\s*(\d+)\s*下/gm)];
+      if(!rows.length) return;
+
+      // Find best 1RM in this session for this exercise (prefer 6-9 reps)
+      const valid69 = rows.filter(r=>{ const reps=parseInt(r[2]); return reps>=6&&reps<=9; });
+      const use = valid69.length ? valid69 : rows;
+      let bestRM = 0, bestW = 0, bestR = 0;
+      use.forEach(r=>{
+        const w=parseFloat(r[1]), reps=parseInt(r[2]);
+        const rm = epley1RM(w, reps);
+        if(rm > bestRM){ bestRM=rm; bestW=w; bestR=reps; }
+      });
+      if(bestRM === 0) return;
+
+      if(!history[exName]) history[exName]=[];
+      // Avoid duplicate dates (keep best 1RM)
+      const existing = history[exName].find(e=>e.dateStr===dateStr);
+      if(existing){
+        if(bestRM > existing.oneRM){ existing.oneRM=Math.round(bestRM*10)/10; existing.weight=bestW; existing.reps=bestR; }
+      } else {
+        history[exName].push({ dateStr, dateObj, oneRM: Math.round(bestRM*10)/10, weight: bestW, reps: bestR });
+      }
+    });
+  });
+  // Sort each exercise by date
+  Object.values(history).forEach(arr=>arr.sort((a,b)=>a.dateObj-b.dateObj));
+  return history;
+}
+
+let prHistory = {};
+
+function populatePRSelect(){
+  const sel = document.getElementById("pr-exercise-select");
+  if(!sel) return;
+  const currentVal = sel.value;
+  sel.innerHTML = '<option value="">— 選擇動作 —</option>';
+  // Group by muscle group
+  const groups = {};
+  Object.entries(PLAN).forEach(([day, {exercises}])=>{
+    exercises.forEach(entry=>{
+      const name = exName(entry);
+      if(!prHistory[name]) return;
+      const group = day;
+      if(!groups[group]) groups[group]=[];
+      if(!groups[group].includes(name)) groups[group].push(name);
+    });
+  });
+  // Also add exercises from trainlog not in current plan
+  Object.keys(prHistory).forEach(name=>{
+    const inPlan = Object.values(PLAN).some(d=>d.exercises.some(e=>exName(e)===name));
+    if(!inPlan){
+      if(!groups["其他"]) groups["其他"]=[];
+      if(!groups["其他"].includes(name)) groups["其他"].push(name);
+    }
+  });
+  Object.entries(groups).forEach(([day, names])=>{
+    const og = document.createElement("optgroup");
+    og.label = PLAN[day] ? day+" — "+PLAN[day].label : day;
+    names.forEach(name=>{
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name + " ("+prHistory[name].length+"次)";
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+  if(currentVal) sel.value = currentVal;
+}
+
+function renderPRChart(exName){
+  const canvas = document.getElementById("pr-canvas");
+  const empty = document.getElementById("pr-empty");
+  const statsEl = document.getElementById("pr-stats");
+  if(!canvas||!empty||!statsEl) return;
+
+  const data = prHistory[exName];
+  if(!data||data.length===0){
+    canvas.style.display="none"; empty.style.display="block";
+    statsEl.innerHTML=""; return;
+  }
+
+  canvas.style.display="block"; empty.style.display="none";
+  const ctx = canvas.getContext("2d");
+  const W=canvas.width, H=canvas.height;
+  const pad={top:20,right:20,bottom:40,left:44};
+  const chartW=W-pad.left-pad.right, chartH=H-pad.top-pad.bottom;
+
+  ctx.clearRect(0,0,W,H);
+
+  const values = data.map(d=>d.oneRM);
+  const minV = Math.floor(Math.min(...values)*0.9);
+  const maxV = Math.ceil(Math.max(...values)*1.05);
+  const range = maxV-minV||1;
+
+  // Grid lines
+  const gridCount = 4;
+  ctx.strokeStyle="rgba(0,0,0,.08)"; ctx.lineWidth=1;
+  for(let i=0;i<=gridCount;i++){
+    const y = pad.top + chartH - (i/gridCount)*chartH;
+    ctx.beginPath(); ctx.moveTo(pad.left,y); ctx.lineTo(pad.left+chartW,y); ctx.stroke();
+    const label = Math.round(minV + (i/gridCount)*range);
+    ctx.fillStyle="#aaa"; ctx.font="bold 9px 'Nunito',sans-serif";
+    ctx.textAlign="right"; ctx.textBaseline="middle";
+    ctx.fillText(label+"kg", pad.left-4, y);
+  }
+
+  // X axis labels (dates)
+  ctx.fillStyle="#aaa"; ctx.font="bold 9px 'Nunito',sans-serif"; ctx.textAlign="center"; ctx.textBaseline="top";
+  const step = Math.max(1, Math.floor(data.length/5));
+  data.forEach((d,i)=>{
+    if(i%step!==0 && i!==data.length-1) return;
+    const x = pad.left + (i/(Math.max(data.length-1,1)))*chartW;
+    ctx.fillText(d.dateStr.slice(5), x, pad.top+chartH+6);
+  });
+
+  // PR highlight line (personal best at each point)
+  let runningBest = 0;
+  const isPR = data.map(d=>{ const pr=d.oneRM>runningBest; if(pr) runningBest=d.oneRM; return pr; });
+
+  // Draw line
+  ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x = pad.left + (i/(Math.max(data.length-1,1)))*chartW;
+    const y = pad.top + chartH - ((d.oneRM-minV)/range)*chartH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle="#FF2D55"; ctx.lineWidth=2.5; ctx.stroke();
+
+  // Fill under line
+  ctx.beginPath();
+  data.forEach((d,i)=>{
+    const x = pad.left + (i/(Math.max(data.length-1,1)))*chartW;
+    const y = pad.top + chartH - ((d.oneRM-minV)/range)*chartH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad.left+chartW, pad.top+chartH);
+  ctx.lineTo(pad.left, pad.top+chartH);
+  ctx.closePath();
+  ctx.fillStyle="rgba(255,45,85,.08)"; ctx.fill();
+
+  // Dots
+  data.forEach((d,i)=>{
+    const x = pad.left + (i/(Math.max(data.length-1,1)))*chartW;
+    const y = pad.top + chartH - ((d.oneRM-minV)/range)*chartH;
+    ctx.beginPath(); ctx.arc(x,y,isPR[i]?5:3,0,Math.PI*2);
+    ctx.fillStyle=isPR[i]?"#FFE600":"#FF2D55";
+    ctx.strokeStyle="#111"; ctx.lineWidth=isPR[i]?2:1.5; ctx.fill(); ctx.stroke();
+
+    // Label for PR dots
+    if(isPR[i]){
+      ctx.fillStyle="#111"; ctx.font="bold 9px 'Nunito',sans-serif";
+      ctx.textAlign="center"; ctx.textBaseline="bottom";
+      ctx.fillText(d.oneRM+"kg", x, y-6);
+    }
+  });
+
+  // Stats
+  const best = Math.max(...values);
+  const latest = values[values.length-1];
+  const first = values[0];
+  const improvement = latest-first;
+  const prCount = isPR.filter(Boolean).length;
+
+  statsEl.innerHTML = [
+    {label:"最高 1RM", val:best.toFixed(1)+"kg", color:"var(--r)"},
+    {label:"最近 1RM", val:latest.toFixed(1)+"kg", color:"var(--k)"},
+    {label:"進步幅度", val:(improvement>=0?"+":"")+improvement.toFixed(1)+"kg", color:improvement>=0?"#00a854":"var(--r)"},
+    {label:"PR 次數", val:prCount+"次", color:"#e07000"},
+  ].map(s=>`<div style="flex:1;min-width:70px;background:var(--w);border:2px solid var(--k);border-radius:4px;padding:6px 8px;text-align:center;">
+    <div style="font-size:9px;font-weight:700;color:#888;letter-spacing:.5px;margin-bottom:3px;">${s.label}</div>
+    <div style="font-size:14px;font-weight:900;color:${s.color};">${s.val}</div>
+  </div>`).join("");
+}
+
+// Event listener for select
+document.addEventListener("DOMContentLoaded", ()=>{
+  const sel = document.getElementById("pr-exercise-select");
+  if(sel) sel.addEventListener("change", ()=>renderPRChart(sel.value));
+});
+
+
+// ── Monthly Statistics ────────────────────────────────
+function parseMonthlyStats(md){
+  if(!md) return null;
+  const months = {}; // { "2026/05": { days: Set, totalSets: 0, totalVolume: 0, sessions: [] } }
+
+  const sessionMatches = [...md.matchAll(/^## .+$/gm)];
+  sessionMatches.forEach((match, i)=>{
+    const start = match.index;
+    const end = i+1 < sessionMatches.length ? sessionMatches[i+1].index : md.length;
+    const session = md.slice(start, end);
+
+    const dateMatch = session.match(/^## (\d{4})\/(\d{2})\/(\d{2})/m);
+    if(!dateMatch) return;
+    const monthKey = dateMatch[1]+"/"+dateMatch[2];
+    const dayKey = dateMatch[3];
+    const dateLabel = dateMatch[2]+"/"+dateMatch[3];
+
+    if(!months[monthKey]) months[monthKey] = { days: new Set(), totalSets: 0, totalVolume: 0, dayLabels: [] };
+    const m = months[monthKey];
+
+    if(!m.days.has(dayKey)){
+      m.days.add(dayKey);
+      m.dayLabels.push(dateLabel);
+    }
+
+    // Count sets and volume from exercise blocks
+    const exMatches = [...session.matchAll(/^### .+$/gm)];
+    exMatches.forEach((exMatch, ei)=>{
+      const exStart = exMatch.index;
+      const exEnd = ei+1 < exMatches.length ? exMatches[ei+1].index : session.length;
+      const eb = session.slice(exStart, exEnd);
+
+      const rows = [...eb.matchAll(/\|\s*\d+\s*\|\s*([\d.]+)\s*kg\s*\|\s*[\d.]+\s*lb\s*\|\s*(\d+)\s*下/gm)];
+      rows.forEach(r=>{
+        const kg=parseFloat(r[1]), reps=parseInt(r[2]);
+        if(isNaN(kg)||isNaN(reps)) return;
+        m.totalSets++;
+        m.totalVolume += kg * reps;
+      });
+
+      // Count bodyweight sets (no weight)
+      const bwRows = [...eb.matchAll(/\|\s*\d+\s*\|\s*—\s*\|\s*—\s*\|\s*(\d+)\s*下/gm)];
+      m.totalSets += bwRows.length;
+    });
+  });
+
+  // Convert to sorted array
+  return Object.entries(months)
+    .sort((a,b)=>b[0].localeCompare(a[0])) // newest first
+    .map(([key, data])=>({
+      key,
+      label: key,
+      days: data.days.size,
+      dayLabels: data.dayLabels.sort(),
+      totalSets: data.totalSets,
+      totalVolume: Math.round(data.totalVolume),
+    }));
+}
+
+function renderMonthly(md){
+  const content=document.getElementById("monthly-content");
+  const empty=document.getElementById("monthly-empty");
+  if(!content||!empty) return;
+  if(!md){content.style.display="none";empty.style.display="block";return;}
+  const stats=parseMonthlyStats(md);
+  if(!stats||!stats.length){
+    content.style.display="none";empty.style.display="block";
+    empty.textContent="尚無訓練紀錄";return;
+  }
+  content.style.display="block";empty.style.display="none";
+
+  // Build set of trained date strings "YYYY/MM/DD"
+  const trainedDates=new Set();
+  stats.forEach(s=>{
+    s.dayLabels.forEach(d=>{
+      const [mm,dd]=d.split("/");
+      trainedDates.add(s.key+"/"+dd.padStart(2,"0"));
+    });
+  });
+
+  // Count last 30 days
+  const now=new Date();
+  let last30=0;
+  for(let i=0;i<30;i++){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const k=d.getFullYear()+"/"+(d.getMonth()+1).toString().padStart(2,"0")+"/"+d.getDate().toString().padStart(2,"0");
+    if(trainedDates.has(k)) last30++;
+  }
+
+  const months=[...new Set(stats.map(s=>s.key))].sort().reverse();
+  const DAYS=["日","一","二","三","四","五","六"];
+
+  let html=`<div style="background:var(--k);color:var(--y);border-radius:4px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;">
+    <span style="font-size:11px;font-weight:700;letter-spacing:1px;">近 30 天訓練次數</span>
+    <span style="font-family:'Bangers',sans-serif;font-size:28px;letter-spacing:2px;">${last30} <span style="font-size:14px;">天</span></span>
+  </div>`;
+
+  months.forEach(mk=>{
+    const [yr,mo]=mk.split("/").map(Number);
+    const firstDay=new Date(yr,mo-1,1).getDay();
+    const daysInMonth=new Date(yr,mo,0).getDate();
+    const monthDays=stats.find(s=>s.key===mk)?.days||0;
+
+    const dayCells=Array(firstDay).fill('<div></div>').join("");
+    const dayCells2=Array.from({length:daysInMonth},(_,i)=>{
+      const day=i+1;
+      const dk=yr+"/"+mo.toString().padStart(2,"0")+"/"+day.toString().padStart(2,"0");
+      const trained=trainedDates.has(dk);
+      const isToday=new Date().toDateString()===new Date(yr,mo-1,day).toDateString();
+      const bg=trained?"var(--r)":"transparent";
+      const color=trained?"#fff":isToday?"var(--b)":"var(--k)";
+      const border=isToday&&!trained?"2px solid var(--b)":"1.5px solid transparent";
+      return `<div style="text-align:center;padding:4px 2px;border-radius:3px;font-size:11px;font-weight:${trained?900:400};background:${bg};color:${color};border:${border};box-sizing:border-box;">${day}</div>`;
+    }).join("");
+
+    html+=`<div class="month-card" style="margin-bottom:14px;">
+      <div class="month-header"><span>${yr}年${mo}月</span><span style="font-size:11px;font-weight:700;">${monthDays} 天</span></div>
+      <div style="padding:8px;">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;">
+          ${DAYS.map(d=>`<div style="text-align:center;font-size:9px;font-weight:700;color:#aaa;padding:3px 0;">${d}</div>`).join("")}
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;">${dayCells}${dayCells2}</div>
+      </div>
+    </div>`;
+  });
+
+  content.innerHTML=html;
+}
+
+
+
+// ── Custom Exercises ──────────────────────────────────
+let customExercises = {}; // { dayKey: ["動作名", ...] }
+const CK = "customEx";
+
+function loadCustom(){
+  try { customExercises=JSON.parse(localStorage.getItem(CK)||"{}"); } catch(e){ customExercises={}; }
+}
+function saveCustom(){
+  localStorage.setItem(CK, JSON.stringify(customExercises));
+}
+
+function renderCustomExercises(){
+  const container = document.getElementById("custom-exercises");
+  if(!container) return;
+  const customs = customExercises[activeDay] || [];
+  container.innerHTML = "";
+
+  customs.forEach((exName, idx)=>{
+    const es = (sets[activeDay]||{})[exName] || [];
+    const isLb = unitMap[exName]==="lb";
+    const prev = lastSession[exName];
+
+    const card = document.createElement("div");
+    card.className = "ex-card";
+    card.style.borderStyle = "dashed";
+
+    // Look up plan entry for rec badge
+    const planEntry = findPlanEntry(exName);
+    const recS = planEntry ? exSets(planEntry) : null;
+    const recR = planEntry ? exReps(planEntry) : null;
+    const recBadge = recS ? `<span class="rec-badge">${recS}×${recR}</span>` : "";
+    const phTag = (planEntry && exPerHand(planEntry)) ? `<span class="perhand-tag">每手</span>` : "";
+
+    // Header
+    const hdr = document.createElement("div");
+    hdr.className = "ex-header";
+    hdr.innerHTML = `<span class="ex-name">${exName} <span style="font-size:9px;color:#aaa;font-weight:700;">自訂</span></span>
+      <div class="ex-right">
+        ${phTag}${recBadge}
+        ${es.length?`<span class="sets-badge">${es.length} 組</span>`:""}
+        <button class="unit-btn ${isLb?"lb":"kg"}">${isLb?"lb→kg":"kg→lb"}</button>
+        <button style="background:none;border:none;color:#ccc;font-size:14px;cursor:pointer;padding:0 2px;" data-remove="${idx}">✕</button>
+      </div>`;
+    hdr.querySelector(".unit-btn").onclick=()=>{ unitMap[exName]=isLb?"kg":"lb"; renderCustomExercises(); };
+    hdr.querySelector("[data-remove]").onclick=()=>{
+      customExercises[activeDay].splice(idx,1);
+      saveCustom();
+      // Remove sets too
+      if(sets[activeDay]&&sets[activeDay][exName]){
+        delete sets[activeDay][exName];
+        saveSets();
+      }
+      renderCustomExercises();
+      renderFinish();
+    };
+    card.appendChild(hdr);
+
+    // Set chips
+    if(es.length){
+      const chips = document.createElement("div");
+      chips.className = "sets-row";
+      es.forEach((s,i)=>{
+        const chip = document.createElement("div");
+        chip.className = "set-chip"; chip.title="點擊刪除";
+        const dispW = s.weight ? toDisp(s.weight, isLb?"lb":"kg") : "";
+        const restTag = s.rest!=null ? `<span class="rest-tag">${fmtTime(s.rest)}</span>` : "";
+        chip.innerHTML = `<span class="set-num">#${i+1}</span>${dispW}${dispW&&s.reps?" × ":""}${s.reps}下${restTag}<span class="set-x">✕</span>`;
+        chip.onclick=()=>{
+          (sets[activeDay][exName]=sets[activeDay][exName]||[]).splice(i,1);
+          saveSets(); renderCustomExercises(); renderFinish();
+        };
+        chips.appendChild(chip);
+      });
+      card.appendChild(chips);
+    }
+
+    // Input row — same per-set placeholder logic as renderExercises
+    const isPerHand = planEntry ? exPerHand(planEntry) : false;
+    const curSets = (sets[activeDay]||{})[exName] || [];
+    const setIdx = curSets.length;
+    let prevSet = null;
+    if(prev && prev.allSets && prev.allSets.length > 0){
+      prevSet = prev.allSets[setIdx] || prev.allSets[prev.allSets.length-1];
+    }
+    const dispPrevW = prevSet&&prevSet.weight ? (isLb?Math.round(parseFloat(prevSet.weight)*KG)+"lb":prevSet.weight+"kg") : null;
+    const wPh = dispPrevW ? dispPrevW : (prev?"—":(isPerHand?"每手 kg":"重量"));
+    const rPh = prevSet&&prevSet.reps ? prevSet.reps : "次數";
+
+    const row = document.createElement("div");
+    row.className = "input-row";
+    row.innerHTML = `<input type="number" class="w-input" placeholder="${wPh}" inputmode="decimal">
+      <input type="number" class="r-input" placeholder="${rPh}" inputmode="numeric">
+      <button class="btn-add">+</button>`;
+
+    const doAdd = ()=>{
+      const wIn = row.querySelector(".w-input");
+      const rIn = row.querySelector(".r-input");
+      let reps = rIn.value.trim();
+      let w = wIn.value.trim();
+      if(!reps && !w && prevSet){
+        w = prevSet.weight || "";
+        reps = prevSet.reps || "";
+      } else if(!reps && prevSet&&prevSet.reps){
+        reps = prevSet.reps;
+      }
+      if(!reps) return;
+      if(w && isLb) w = (parseFloat(w)/KG).toFixed(1);
+      if(!sets[activeDay]) sets[activeDay]={};
+      if(!sets[activeDay][exName]) sets[activeDay][exName]=[];
+      const arr = sets[activeDay][exName];
+      if(rest && rest.ex===exName && rest.day===activeDay) stopRest(true);
+      else stopRest(false);
+      const newSetIdx = arr.length;
+      arr.push({weight:w?Math.round(parseFloat(w)*100)/100:null, reps, rest:null});
+      saveSets();
+      startRest(exName, newSetIdx);
+      wIn.value=""; rIn.value="";
+      renderCustomExercises(); renderFinish();
+    };
+
+    row.querySelector(".btn-add").onclick = doAdd;
+    row.querySelector(".r-input").addEventListener("keydown", e=>{ if(e.key==="Enter") doAdd(); });
+    card.appendChild(row);
+    container.appendChild(card);
+  });
+}
+
+// Dynamically build muscle group → exercises mapping from PLAN + MUSCLE_SCORES
+// This ensures new exercises added to PLAN are automatically available
+const MUSCLE_GROUP_MAP = {
+  "胸大肌":"胸", "前鋸肌":"胸",
+  "闊背肌":"背", "菱形肌":"背", "大圓肌":"背", "後三角肌":"背",
+  "股四頭肌":"腿", "腿後肌群":"腿", "臀大肌":"腿", "豎脊肌":"腿",
+  "前三角肌":"肩", "側三角肌":"肩",
+  "肱二頭肌":"二頭", "肱肌":"二頭",
+  "三頭肌":"三頭",
+  "核心":"核心", "外旋肌":"肩",
+};
+
+function findPlanEntry(name){
+  // Find the exercise entry in PLAN that matches the given name (or is a variant)
+  for(const day of Object.values(PLAN)){
+    for(const entry of day.exercises){
+      if(exName(entry)===name) return entry;
+      if((exVariants(entry)||[]).includes(name)){
+        // Return a synthetic entry with the variant name but same sets/reps
+        return {...entry, name};
+      }
+    }
+  }
+  return null;
+}
+
+function buildMuscleExMap(){
+  const map = {"胸":new Set(),"背":new Set(),"腿":new Set(),"肩":new Set(),"二頭":new Set(),"三頭":new Set(),"核心":new Set()};
+
+  Object.values(PLAN).forEach(day=>{
+    day.exercises.forEach(entry=>{
+      const variants = exVariants(entry);
+      if(variants){
+        // Has variants: add each variant individually, skip the container name
+        variants.forEach(varName=>{
+          const scores = MUSCLE_SCORES[varName];
+          if(scores){
+            Object.keys(scores).forEach(muscle=>{
+              const group = MUSCLE_GROUP_MAP[muscle];
+              if(group && map[group]) map[group].add(varName);
+            });
+          }
+        });
+      } else {
+        // No variants: add the exercise directly
+        const name = exName(entry);
+        const scores = MUSCLE_SCORES[name];
+        if(scores){
+          Object.keys(scores).forEach(muscle=>{
+            const group = MUSCLE_GROUP_MAP[muscle];
+            if(group && map[group]) map[group].add(name);
+          });
+        }
+      }
+    });
+  });
+
+  const result = {};
+  Object.entries(map).forEach(([g,s])=>{ result[g]=[...s].sort(); });
+  return result;
+}
+
+// Built once at runtime, always reflects current PLAN + MUSCLE_SCORES
+const MUSCLE_EX_MAP = buildMuscleExMap();
+
+document.getElementById("custom-muscle-select").addEventListener("change", function(){
+  const muscle = this.value;
+  const exSel = document.getElementById("custom-ex-select");
+  exSel.innerHTML = '<option value="">— 選動作 —</option>';
+  if(!muscle) return;
+  (MUSCLE_EX_MAP[muscle]||[]).forEach(ex=>{
+    const opt = document.createElement("option");
+    opt.value = ex; opt.textContent = ex;
+    exSel.appendChild(opt);
+  });
+});
+
+document.getElementById("custom-ex-select").addEventListener("change", function(){
+  if(this.value) document.getElementById("custom-ex-name").value = this.value;
+});
+
+function addCustomExercise(){
+  const input = document.getElementById("custom-ex-name");
+  const name = input.value.trim();
+  if(!name){ input.focus(); return; }
+  if(!customExercises[activeDay]) customExercises[activeDay]=[];
+  if(!customExercises[activeDay].includes(name)){
+    customExercises[activeDay].push(name);
+    saveCustom();
+  }
+  input.value="";
+  document.getElementById("custom-muscle-select").value="";
+  document.getElementById("custom-ex-select").innerHTML='<option value="">— 選動作 —</option>';
+  renderCustomExercises();
+  renderFinish();
+}
+
+document.getElementById("btn-add-custom").onclick = addCustomExercise;
+document.getElementById("custom-ex-name").addEventListener("keydown", e=>{
+  if(e.key==="Enter") addCustomExercise();
+});
+
+// ── GitHub Sync ───────────────────────────────────────
+const GH_CFG_KEY = "wl-gh-cfg-v1";
+
+function ghLoadCfg(){
+  try{
+    const c = JSON.parse(localStorage.getItem(GH_CFG_KEY)||"{}");
+    if(c.pat) document.getElementById("gh-pat").value = c.pat;
+    if(c.repo) document.getElementById("gh-repo").value = c.repo;
+    if(c.path) document.getElementById("gh-path").value = c.path;
+    if(c.branch) document.getElementById("gh-branch").value = c.branch;
+  }catch(_){}
+}
+
+function ghSaveCfg(){
+  const cfg = {
+    pat: document.getElementById("gh-pat").value.trim(),
+    repo: document.getElementById("gh-repo").value.trim(),
+    path: document.getElementById("gh-path").value.trim(),
+    branch: document.getElementById("gh-branch").value.trim()
+  };
+  localStorage.setItem(GH_CFG_KEY, JSON.stringify(cfg));
+  toast("✅ GitHub 設定已儲存");
+}
+
+function ghGetCfg(){
+  return {
+    pat: document.getElementById("gh-pat").value.trim(),
+    repo: document.getElementById("gh-repo").value.trim(),
+    path: document.getElementById("gh-path").value.trim(),
+    branch: document.getElementById("gh-branch").value.trim()
+  };
+}
+
+function ghSetStatus(state, text){
+  const dot = document.getElementById("gh-status-dot");
+  const txt = document.getElementById("gh-status-text");
+  dot.className = state; // '', 'ok', 'err', 'busy'
+  txt.textContent = text;
+}
+
+function ghShowCommit(sha, message, date){
+  const el = document.getElementById("gh-commit-info");
+  if(!sha){ el.style.display="none"; return; }
+  const shortSha = sha.slice(0,7);
+  const dateStr = date ? new Date(date).toLocaleString("zh-TW",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) : "";
+  el.style.display = "block";
+  el.innerHTML = `<span class="gh-commit-sha">${shortSha}</span> <span style="color:#555;">${message||""}</span><br><span style="color:#bbb;">${dateStr}</span>`;
+}
+
+async function ghApiRequest(pat, method, url, body){
+  const opts = {
+    method,
+    headers:{
+      "Authorization": `Bearer ${pat}`,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28"
+    }
+  };
+  if(body) { opts.headers["Content-Type"]="application/json"; opts.body=JSON.stringify(body); }
+  const res = await fetch(url, opts);
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+  return data;
+}
+
+async function ghPull(){
+  const {pat, repo, path, branch} = ghGetCfg();
+  if(!pat || !repo || !path){ toast("⚠️ 請先填寫 PAT、repo、檔名"); return; }
+  ghSetStatus("busy","拉取中…");
+  try{
+    const url = `https://api.github.com/repos/${repo}/contents/${path}?ref=${branch||"main"}`;
+    const data = await ghApiRequest(pat, "GET", url);
+    // data.content is base64
+    const decoded = decodeURIComponent(escape(atob(data.content.replace(/\n/g,""))));
+    // Open as blob so user can save or replace
+    const blob = new Blob([decoded], {type:"text/html"});
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = path.split("/").pop() || "workout_logger.html";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(blobUrl); }, 300);
+    const sha = data.sha;
+    const commitMsg = data.name;
+    ghShowCommit(sha, `遠端版本 (${branch||"main"})`, null);
+    ghSetStatus("ok", "Pull 成功 ✓");
+    // Store sha for next push
+    localStorage.setItem("wl-gh-sha", sha);
+    toast("✅ 已下載 GitHub 最新版本");
+  }catch(e){
+    ghSetStatus("err","Pull 失敗");
+    toast("❌ Pull 錯誤："+e.message);
+  }
+}
+
+async function ghPush(){
+  const {pat, repo, path, branch} = ghGetCfg();
+  if(!pat || !repo || !path){ toast("⚠️ 請先填寫 PAT、repo、檔名"); return; }
+  ghSetStatus("busy","推送中…");
+  try{
+    // Get current SHA of the file (needed for update)
+    const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+    let currentSha = localStorage.getItem("wl-gh-sha") || null;
+
+    // Always fetch latest sha to avoid conflicts
+    try{
+      const existing = await ghApiRequest(pat, "GET", `${url}?ref=${branch||"main"}`);
+      currentSha = existing.sha;
+      localStorage.setItem("wl-gh-sha", currentSha);
+    }catch(fetchErr){
+      // File might not exist yet (first push) — that's OK, sha stays null
+      if(!fetchErr.message.includes("Not Found")) throw fetchErr;
+      currentSha = null;
+    }
+
+    // Serialize current HTML
+    const html = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+    // Base64 encode (handle CJK chars via UTF-8)
+    const encoded = btoa(unescape(encodeURIComponent(html)));
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString("zh-TW",{year:"numeric",month:"2-digit",day:"2-digit"});
+    const timeStr = now.toLocaleTimeString("zh-TW",{hour:"2-digit",minute:"2-digit"});
+    const commitMessage = `workout logger update ${dateStr} ${timeStr}`;
+
+    const body = {
+      message: commitMessage,
+      content: encoded,
+      branch: branch||"main"
+    };
+    if(currentSha) body.sha = currentSha;
+
+    const result = await ghApiRequest(pat, "PUT", url, body);
+    const newSha = result.content && result.content.sha;
+    if(newSha) localStorage.setItem("wl-gh-sha", newSha);
+
+    const commitSha = result.commit && result.commit.sha;
+    const commitDate = result.commit && result.commit.author && result.commit.author.date;
+    ghShowCommit(commitSha||newSha, commitMessage, commitDate||new Date().toISOString());
+    ghSetStatus("ok","Push 成功 ✓");
+    toast("✅ 已推送到 GitHub");
+  }catch(e){
+    ghSetStatus("err","Push 失敗");
+    toast("❌ Push 錯誤："+e.message);
+  }
+}
+
+// Toggle GitHub panel (close other panels)
+document.getElementById("btn-toggle-github").onclick = function(){
+  const gp = document.getElementById("github-panel");
+  const show = gp.style.display === "block";
+  // Close other panels
+  document.getElementById("log-panel").style.display = "none";
+  document.getElementById("analysis-panel").style.display = "none";
+  document.getElementById("monthly-panel").style.display = "none";
+  document.getElementById("btn-toggle-log").textContent = "日誌";
+  document.getElementById("btn-toggle-analysis").textContent = "分析";
+  document.getElementById("btn-toggle-monthly").textContent = "月報";
+  gp.style.display = show ? "none" : "block";
+  this.textContent = show ? "⬡ GH" : "關閉";
+};
+
+document.getElementById("gh-btn-save-cfg").onclick = ghSaveCfg;
+document.getElementById("gh-btn-pull").onclick = ghPull;
+document.getElementById("gh-btn-push").onclick = ghPush;
+
+// On load: restore saved config
+ghLoadCfg();
+
+loadAll(); loadCustom(); render(); updateLogView(); updateDayStat();
+</script>
+</body>
+</html>
