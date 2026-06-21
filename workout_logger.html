@@ -436,71 +436,49 @@
 const PLAN={
   "Day 1":{
     label:"Chest & Triceps",
-    muscles:{p:["胸大肌","三頭肌"],s:["前三角肌","前鋸肌"]},
+    muscles:{p:["胸大肌","三頭肌"],s:["前三角肌","側三角肌","前鋸肌"]},
     exercises:[
-      {name:"槓鈴臥推 (Barbell Bench Press)",sets:4,reps:"5–8"},
-      {name:"上斜啞鈴推舉",perHand:true,sets:3,reps:"8–10"},
-      {name:"蝴蝶機夾胸 (Pec Deck Fly)",sets:3,reps:"12–15"},
-      {name:"雙槓支撐 (Dips)",sets:3,reps:"8–12"},
-      {name:"滑輪三頭下壓 (繩索)",sets:3,reps:"12–15"},
+      {name:"臥推",variants:["槓鈴臥推 (Barbell Bench Press)","啞鈴臥推 (Dumbbell Bench Press)"],sets:4,reps:"5–8"},
+      {name:"上斜推",variants:["上斜啞鈴推舉","上斜槓鈴推舉 (Incline Barbell Press)"],sets:3,reps:"8–10"},
+      {name:"夾胸",variants:["蝴蝶機夾胸 (Pec Deck Fly)","啞鈴飛鳥 (Dumbbell Fly)"],sets:3,reps:"12–15"},
+      {name:"三頭主力",variants:["雙槓支撐 (Dips)","窄握臥推 (Close Grip Bench Press)"],sets:3,reps:"8–12"},
+      {name:"三頭孤立",variants:["滑輪三頭下壓 (繩索)","法式推舉 (Skull Crusher)"],sets:3,reps:"12–15"},
+      {name:"啞鈴側平舉",perHand:true,sets:2,reps:"12–15"},
       {name:"Hanging Leg Raise",sets:3,reps:"15–20"}
     ]
   },
   "Day 2":{
-    label:"Back Width & Thickness",
-    muscles:{p:["闊背肌","菱形肌"],s:["大圓肌","後三角肌"]},
+    label:"Back & Biceps",
+    muscles:{p:["闊背肌","肱二頭肌"],s:["菱形肌","後三角肌"]},
     exercises:[
-      {name:"離心引體向上 (Negative Pull-up)",sets:4,reps:"3–5"},
-      {name:"滑輪下拉 (寬手柄)",sets:4,reps:"8–10"},
-      {name:"單臂啞鈴划船",perHand:true,sets:4,reps:"8–10"},
-      {name:"地雷管划船 (Landmine Row)",sets:3,reps:"10–12"},
+      {name:"垂直拉",variants:["滑輪下拉 (寬手柄)","離心引體向上 (Negative Pull-up)"],sets:4,reps:"6–10"},
+      {name:"垂直拉 Vol.2",variants:["窄握滑輪下拉 (V柄)","滑輪下拉 (寬手柄)"],sets:3,reps:"8–10"},
+      {name:"水平拉 主力",variants:["單臂啞鈴划船","胸靠式器材划船"],sets:4,reps:"8–10"},
+      {name:"水平拉 補量",variants:["坐姿滑輪划船 (Seated Cable Row)","地雷管划船 (Landmine Row)"],sets:3,reps:"10–12"},
       {name:"面拉 (Face Pull)",sets:3,reps:"15–20"},
-      {name:"鳥犬式",sets:3,reps:"12–15"}
+      {name:"二頭",variants:["坐姿啞鈴二頭彎舉","錘式彎舉"],perHand:true,sets:3,reps:"10–12"}
     ]
   },
   "Day 3":{
     label:"Legs — Full",
     muscles:{p:["股四頭肌","臀大肌"],s:["腿後肌群","核心"]},
     exercises:[
-      {name:"週替換深蹲／Hack Squat",variants:["高槓深蹲 (High Bar Squat)","哈克蹲 (Hack Squat)"],sets:4,reps:"6–8"},
-      {name:"保加利亞分腿蹲 (Bulgarian Split Squat)",sets:3,reps:"10–12"},
+      {name:"主力蹲",variants:["高槓深蹲 (High Bar Squat)","哈克蹲 (Hack Squat)"],sets:4,reps:"6–8"},
+      {name:"保加利亞分腿蹲 (Bulgarian Split Squat)",perHand:true,sets:3,reps:"10–12"},
       {name:"腿捲曲機 (Leg Curl)",sets:3,reps:"10–12"},
-      {name:"鳥犬式",sets:3,reps:"12–15"}
-    ]
-  },
-  "Day 4":{
-    label:"Chest Vol.2 & Shoulders",
-    muscles:{p:["胸大肌","三頭肌"],s:["前三角肌","側三角肌"]},
-    exercises:[
-      {name:"槓鈴臥推 (Barbell Bench Press)",sets:5,reps:"3–6",note:"波動組"},
-      {name:"窄握臥推 (Close Grip Bench Press)",sets:3,reps:"6–8"},
-      {name:"蝴蝶機夾胸 (Pec Deck Fly)",sets:3,reps:"12–15"},
-      {name:"坐姿啞鈴肩推",sets:3,reps:"8–10"},
-      {name:"啞鈴側平舉",perHand:true,sets:3,reps:"12–15"},
-      {name:"面拉 (Face Pull)",sets:3,reps:"15–20"},
       {name:"Hanging Leg Raise",sets:3,reps:"15–20"}
     ]
   },
-  "Day 5":{
-    label:"Back & Biceps",
-    muscles:{p:["闊背肌","肱二頭肌"],s:["菱形肌","後三角肌"]},
+  "Day 4":{
+    label:"Shoulders & Posterior Chain",
+    muscles:{p:["前三角肌","側三角肌"],s:["腿後肌群","闊背肌"]},
     exercises:[
-      {name:"離心引體向上 (Negative Pull-up)",sets:4,reps:"3–5"},
-      {name:"窄握滑輪下拉 (V柄)",sets:4,reps:"8–10"},
-      {name:"胸靠式器材划船",sets:4,reps:"8–10"},
-      {name:"坐姿啞鈴二頭彎舉",perHand:true,sets:3,reps:"10–12"},
-      {name:"錘式彎舉",perHand:true,sets:3,reps:"10–12"}
-    ]
-  },
-  "Day 6":{
-    label:"Triceps & Posterior Chain",
-    muscles:{p:["三頭肌","腿後肌群"],s:["臀大肌","豎脊肌"]},
-    exercises:[
-      {name:"滑輪三頭下壓 (繩索)",sets:4,reps:"12–15"},
-      {name:"雙槓支撐 (Dips)",sets:3,reps:"8–12"},
+      {name:"肩推",variants:["槓鈴肩推 (Overhead Press)","坐姿啞鈴肩推"],sets:4,reps:"5–8"},
+      {name:"啞鈴側平舉",perHand:true,sets:4,reps:"12–15"},
       {name:"槓鈴羅馬尼亞硬舉 (Barbell RDL)",sets:4,reps:"6–8"},
-      {name:"Hanging Leg Raise",sets:3,reps:"15–20"},
-      {name:"鳥犬式",sets:3,reps:"12–15"}
+      {name:"背部補量",variants:["窄握滑輪下拉 (V柄)","滑輪下拉 (寬手柄)"],sets:3,reps:"8–10"},
+      {name:"面拉 (Face Pull)",sets:3,reps:"15–20"},
+      {name:"二頭",variants:["坐姿啞鈴二頭彎舉","錘式彎舉"],perHand:true,sets:3,reps:"10–12"}
     ]
   },
   "自由日":{
@@ -632,9 +610,28 @@ function buildEntry(day,sd,date,time){
   }
 
   // Write planned exercises first (preserves order)
-  PLAN[day].exercises.forEach(entry=>{ const ex=exName(entry); writeExBlock(ex, sd[ex]||[]); });
+  // For variant exercises, sets are stored under the chosen variant name, not the container name
+  PLAN[day].exercises.forEach(entry=>{
+    const ex=exName(entry);
+    const variants=exVariants(entry);
+    if(variants){
+      // Find whichever variant was actually logged this session
+      const loggedVariant = variants.find(v=>(sd[v]||[]).length>0);
+      const esKey = loggedVariant || ex;
+      writeExBlock(esKey, sd[esKey]||[]);
+    } else {
+      writeExBlock(ex, sd[ex]||[]);
+    }
+  });
   // Write custom exercises (covers 自由日 entirely, and supplements for other days)
-  customs.forEach(ex=>{ writeExBlock(ex, sd[ex]||[]); });
+  // Write custom exercises — skip any already written as a planned variant
+  const writtenKeys = new Set();
+  PLAN[day].exercises.forEach(entry=>{
+    const variants=exVariants(entry);
+    if(variants){ variants.forEach(v=>writtenKeys.add(v)); }
+    else { writtenKeys.add(exName(entry)); }
+  });
+  customs.forEach(ex=>{ if(!writtenKeys.has(ex)) writeExBlock(ex, sd[ex]||[]); });
 
   return md+(any?"":"_（無紀錄）_\n")+"---\n";
 }
@@ -858,7 +855,7 @@ function renderExercises(){
     // Input row
     const ir=document.createElement("div"); ir.className="input-row";
     const prev=lastSession[esKey]||lastSession[ex];
-    const curSets=(sets[activeDay]||{})[ex]||[];
+    const curSets=(sets[activeDay]||{})[esKey]||(sets[activeDay]||{})[ex]||[];
     const setIdx=curSets.length; // 0-based index of the set about to be logged
     // Pick the matching previous set if available, else fallback to last set
     let prevSet=null;
@@ -1071,6 +1068,13 @@ const MUSCLE_SCORES = {
   "保加利亞分腿蹲 (Bulgarian Split Squat)": {"股四頭肌":2,"臀大肌":3,"腿後肌群":1},
   "離心引體向上 (Negative Pull-up)": {"闊背肌":3,"肱二頭肌":2,"菱形肌":1},
   "彈力帶輔助引體向上 (Band Pull-up)":{"闊背肌":3,"肱二頭肌":2},
+  "啞鈴臥推 (Dumbbell Bench Press)":{"胸大肌":3,"前三角肌":2,"三頭肌":1},
+  "上斜槓鈴推舉 (Incline Barbell Press)":{"胸大肌":3,"前三角肌":2,"三頭肌":1},
+  "啞鈴飛鳥 (Dumbbell Fly)":{"胸大肌":3,"前鋸肌":1},
+  "法式推舉 (Skull Crusher)":{"三頭肌":3},
+  "坐姿滑輪划船 (Seated Cable Row)":{"菱形肌":3,"闊背肌":2,"肱二頭肌":1},
+  "槓鈴肩推 (Overhead Press)":{"前三角肌":3,"側三角肌":2,"三頭肌":1},
+  "滑輪側平舉 (Cable Lateral Raise)":{"側三角肌":3,"前三角肌":1},
 };
 
 // Muscle groups for radar (8 categories)
@@ -1530,7 +1534,7 @@ function buildAnchors(oneRM){
   const directBench=oneRM["槓鈴臥推 (Barbell Bench Press)"]||oneRM["槓鈴臥推 波動組 (Bench Press Wave)"]||null;
   const bench=directBench?{kg:directBench,n:1,std:0,direct:true}:estimateBench(oneRM);
   // For antagonist analysis: only use barbell squat (not hack squat - different loading)
-  const squat=oneRM["高槓深蹲 (High Bar Squat)"]||oneRM["週替換深蹲 (六角槓/高槓)"]||null;
+  const squat=oneRM["高槓深蹲 (High Bar Squat)"]||oneRM["哈克蹲 (Hack Squat)"]||oneRM["週替換深蹲 (六角槓/高槓)"]||null;
   const rdlPlates=oneRM["槓鈴羅馬尼亞硬舉 (Barbell RDL)"];
   // Back anchor: single arm row (free weight, perhand×2 for total)
   const singleArmRM = oneRM["單臂啞鈴划船"];
@@ -1547,8 +1551,8 @@ function buildAnchors(oneRM){
     _benchInfo:  bench,
     _squat:      squat,
     _rdl:        rdlPlates||null, // total weight including bar
-    _shoulder:   oneRM["坐姿啞鈴肩推"]||null,
-    _shoulderPH: oneRM["坐姿啞鈴肩推"]||null,
+    _shoulder:   oneRM["槓鈴肩推 (Overhead Press)"]||oneRM["坐姿啞鈴肩推"]||null,
+    _shoulderPH: oneRM["槓鈴肩推 (Overhead Press)"]||oneRM["坐姿啞鈴肩推"]||null,
     _bicep:      bicepRM ? bicepRM*2 : null,  // perhand×2
     _tricep:     tricepRM || null,
     _back:       backTotal,
